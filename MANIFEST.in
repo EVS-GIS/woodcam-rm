@@ -1,0 +1,3 @@
+include woodcamrm/schema.sql
+graft woodcamrm/templates
+global-exclude *.pyc

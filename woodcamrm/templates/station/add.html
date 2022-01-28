@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Add station{% endblock %}
+
+{% block content %}
+<div class="card text-center w-75 mx-auto">
+    <div class="card-header">
+        Register a new station
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3 row">
+                <label for="common_name" class="col-sm-2 col-form-label">Station common name</label>
+                <div class="col-sm-10">
+                    <input type="text" name="common_name" class="form-control" id="common_name" required>
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label for="api_name" class="col-sm-2 col-form-label">Station API name</label>
+                <div class="col-sm-10">
+                    <input type="text" name="api_name" class="form-control" id="api_name">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label for="monthly_data" class="col-sm-2 col-form-label">4G monthly data plan (Mo)</label>
+                <div class="col-sm-10">
+                    <input type="number" name="monthly_data" class="form-control" id="monthly_data">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label for="reset_day" class="col-sm-2 col-form-label">4G plan reset day</label>
+                <div class="col-sm-10">
+                    <input type="number" name="reset_day" class="form-control" id="reset_day">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label for="phone_number" class="col-sm-2 col-form-label">4G phone number</label>
+                <div class="col-sm-10">
+                    <input type="text" name="phone_number" class="form-control" id="phone_number">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label for="ip" class="col-sm-2 col-form-label">Installation IP</label>
+                <div class="col-sm-10">
+                    <input minlength="7" maxlength="15" size="15"
+                        pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" name="ip"
+                        class="form-control" id="ip">
+                </div>
+            </div>
+            <div class="mb-3 row">
+                <label for="proxy" class="col-sm-2 col-form-label">Proxy</label>
+                <div class="col-sm-10">
+                    <input minlength="7" maxlength="15" size="15"
+                        pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" name="proxy"
+                        class="form-control" id="proxy">
+                </div>
+            </div>
+
+            <input type="submit" class="btn btn-primary" value="Submit">
+        </form>
+    </div>
+</div>
+{% endblock %}
