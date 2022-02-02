@@ -1,4 +1,5 @@
 from woodcamrm import create_app
+from flask import render_template
 
 
 def test_config():
@@ -6,6 +7,6 @@ def test_config():
     assert create_app({'TESTING': True}).testing
 
 
-def test_hello(client):
-    response = client.get('/hello')
-    assert response.data == b'Hello, World!'
+# def test_home(client):
+#     response = client.get('/')
+#     assert response.data == render_template('home/index.html', hometext="Hello, World!")

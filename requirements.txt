@@ -6,3 +6,6 @@ psycopg2
 pytest
 pytest-dotenv
 coverage
+# celery[redis]
+Flask-APScheduler
+paho-mqtt

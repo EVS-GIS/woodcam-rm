@@ -1,14 +1,11 @@
 {% macro build_site_navigation(pages, selected) %}
-<div class="w-1/4 mr-8">
-  <ul>
-    {% for page in pages %}
-    <li>
-      <a href="{{ url_for('station.update', id=page['id']) }}" class="nav-link link-dark {% if selected == page['id'] %}active{% endif %}">
-        <span class="iconify" data-icon="mdi:camera-metering-center"></span>
-        {{page["common_name"]}}
-      </a>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
+{% for page in pages %}
+<li>
+  <a href="{{ url_for('station.station', id=page['id']) }}"
+    class="nav-link link-dark {% if selected == page['id'] %}active{% endif %}">
+    <span class="iconify" data-icon="mdi:camera-metering-center"></span>
+    {{page["common_name"]}}
+  </a>
+</li>
+{% endfor %}
 {% endmacro %}

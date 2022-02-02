@@ -3,13 +3,47 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-{% for st in stations %}
-<div class="card">
-    <h1>{{ st['common_name'] }}</h1>
-    <div class="about">added {{ st['created'].strftime('%Y-%m-%d') }}</div>
+<div class="row">
+    <h4>Running jobs</h4>
+    <div class="card-group">
+        {% for jb in jobs %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ jb['full_name'] }}</h5>
+                <p class="card-text">{{jb['description']}}</p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">
+                    last execution: {% if jb['last_execution'] %}{{ jb['last_execution'].strftime('%Y-%m-%d %H:%M:%S') }}
+                    {% else %}never{%endif%}
+                </small>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 </div>
-{% if not loop.last %}
 <hr>
-{% endif %}
-{% endfor %}
+<div class="row">
+    <h4>Monitored stations</h4>
+    <div class="card-group">
+        {% if stations %}
+        {% for st in stations %}
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">{{ st['common_name'] }}</h5>
+                <p class="card-text">IP ({{ st['ip'] }}) reachable/unreachable</p>
+                <p class="card-text">Last record checked: {{ st['last_record'] }}</p>
+                <p class="card-text">graph hauteur d'eau</p>
+                <p class="card-text">4G data plan usage: {{ st['used_data'] }}/{{ st['monthly_data'] }}Mo</p>
+                <p class="card-text">4G data reset day: {{ st['reset_day'] }}. Data transfer scheluded for ....</p>
+            </div>
+            <div class="card-footer">
+                <small class="text-muted">added {{ st['created'].strftime('%Y-%m-%d') }}</small>
+            </div>
+        </div>
+        {% endfor %}
+        {%endif%}
+    </div>
+</div>
+
 {% endblock %}
