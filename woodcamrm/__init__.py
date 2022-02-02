@@ -27,6 +27,8 @@ def create_app(test_config=None):
         API_URI=os.environ.get("API_URI"),
         API_STATION_ID=os.environ.get("API_STATION_ID"),
         API_OBSERVATION=os.environ.get("API_OBSERVATION"),
+        OID_DATA_RECEIVED=os.environ.get("OID_DATA_RECEIVED"),
+        OID_DATA_TRANSMITTED=os.environ.get("OID_DATA_TRANSMITTED")
     )
 
     if test_config is None:

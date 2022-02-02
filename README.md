@@ -1,6 +1,11 @@
 # WoodCam RM
 WoodCam Records Manager
 
+# Requirements
+
+* snmp
+* mqtt broker (eg. mosquitto)
+
 # Quick start
 
     # Create python virtualenv

@@ -50,8 +50,8 @@
                           </tr>
                         <tr>
                           <th scope="row">4G data plan usage</th>
-                          <td>{{ st['used_data'] }}/{{ st['monthly_data'] / 1000}} Gb</td>
-                          <td>Reset on {{ st['reset_day'] }}</td>
+                          <td>{{ st['current_data'] / 1000 }}/{{ st['monthly_data'] / 1000 }} Gb</td>
+                          <td>Reset day: {{ st['reset_day'] }}</td>
                         </tr>
                       </tbody>
                 </table>

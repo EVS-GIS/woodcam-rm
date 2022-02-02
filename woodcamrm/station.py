@@ -1,3 +1,5 @@
+import datetime
+
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for
 )
@@ -7,6 +9,7 @@ from psycopg2.extras import RealDictCursor
 
 from woodcamrm.auth import login_required
 from woodcamrm.db import get_db
+from .extensions import scheduler
 
 bp = Blueprint('station', __name__, url_prefix='/station')
 
@@ -88,6 +91,8 @@ def add():
             except db.IntegrityError:
                 error = f"Station {fields['common_name']['value']} is already registered."
             else:
+                scheduler.get_job(id ="hydrodata_update").modify(next_run_time=datetime.datetime.now())
+                scheduler.get_job(id ="check_data_plan").modify(next_run_time=datetime.datetime.now())
                 return redirect(url_for('station.index'))
 
     return render_template('station/add.html', selected='addstation', fields=fields)
@@ -156,6 +161,8 @@ def update(id):
             except db.IntegrityError:
                 error = f"Station {common_name} already exists."
             else:
+                scheduler.get_job(id ="hydrodata_update").modify(next_run_time=datetime.datetime.now())
+                scheduler.get_job(id ="check_data_plan").modify(next_run_time=datetime.datetime.now())
                 return redirect(url_for('station.index'))
 
     return render_template('station/update.html', station=station, selected=id, fields=fields)

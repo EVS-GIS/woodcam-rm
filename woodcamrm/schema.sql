@@ -32,6 +32,8 @@ CREATE TABLE stations (
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     api_name TEXT,
     monthly_data INTEGER,
+    current_data NUMERIC,
+    last_data_check TIMESTAMP,
     reset_day INTEGER,
     phone_number TEXT,
     ip INET,
