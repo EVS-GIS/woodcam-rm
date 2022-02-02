@@ -46,13 +46,18 @@ def hydrodata_update():
                                data={"code_entite": st['api_name'],
                                      "grandeur_hydro": "H",
                                      "fields": "date_obs,resultat_obs",
-                                     "size": 20})
-            hydrodata = rep.json()['data']
+                                     "size": 1})
+            hydrodata = rep.json()['data'][0]
             
+            #TODO: Check si la valeur est au dessus ou en dessous du seuil pour le mois en cours puis:
+            # 1) update la table stations
+            # 2) envoyer un push sur MQTT
             
+            cur.execute(
+                f"UPDATE stations SET last_hydro_time = '{hydrodata['date_obs']}', last_hydro = {hydrodata['resultat_obs']} WHERE id = {st['id']};"
+            )
 
-        
-        
+
         cur.execute(
             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP WHERE job_name = 'hydrodata_update';"
         )
@@ -60,69 +65,69 @@ def hydrodata_update():
         cur.close()
 
 
-@scheduler.task(
-    "interval",
-    id="records_check",
-    seconds=60,
-    max_instances=1,
-    start_date="2022-01-01 12:00:00",
-)
-def records_check():
-    with scheduler.app.app_context():
-        db = get_db()
-        cur = db.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT * FROM stations;")
-        stations = cur.fetchall()
+# @scheduler.task(
+#     "interval",
+#     id="records_check",
+#     seconds=60,
+#     max_instances=1,
+#     start_date="2022-01-01 12:00:00",
+# )
+# def records_check():
+#     with scheduler.app.app_context():
+#         db = get_db()
+#         cur = db.cursor(cursor_factory=RealDictCursor)
+#         cur.execute("SELECT * FROM stations;")
+#         stations = cur.fetchall()
 
-        for st in stations:
-            # ssh_client = paramiko.SSHClient()
-            record_files = glob.glob(
-                os.path.join(st["records_path"], "**/*"), recursive=True
-            )
+#         for st in stations:
+#             # ssh_client = paramiko.SSHClient()
+#             record_files = glob.glob(
+#                 os.path.join(st["records_path"], "**/*"), recursive=True
+#             )
 
-            if not record_files:
-                break
+#             if not record_files:
+#                 break
 
-            cur.execute(f"SELECT * FROM records WHERE station_id = {st['id']};")
-            record_known = [rec["path"] for rec in cur.fetchall()]
+#             cur.execute(f"SELECT * FROM records WHERE station_id = {st['id']};")
+#             record_known = [rec["path"] for rec in cur.fetchall()]
 
-            if record_known:
-                new_records = [r for r in record_files if r not in record_known]
-                deleted_records = [r for r in record_known if r not in record_files]
-            else:
-                new_records = record_files
-                deleted_records = None
+#             if record_known:
+#                 new_records = [r for r in record_files if r not in record_known]
+#                 deleted_records = [r for r in record_known if r not in record_files]
+#             else:
+#                 new_records = record_files
+#                 deleted_records = None
 
-            for nr in new_records:
-                output = subprocess.check_output(
-                    f"exiftool -d '%Y-%m-%d %H:%M:%S %Z' {nr}", shell=True
-                )
-                lines = output.decode("ascii").split("\n")
-                lines = [li for li in lines if li != ""]
+#             for nr in new_records:
+#                 output = subprocess.check_output(
+#                     f"exiftool -d '%Y-%m-%d %H:%M:%S %Z' {nr}", shell=True
+#                 )
+#                 lines = output.decode("ascii").split("\n")
+#                 lines = [li for li in lines if li != ""]
 
-                keys = [li.split(" : ")[0].rstrip() for li in lines]
-                values = [li.split(" : ")[1] for li in lines]
+#                 keys = [li.split(" : ")[0].rstrip() for li in lines]
+#                 values = [li.split(" : ")[1] for li in lines]
 
-                meta = dict(zip(keys, values))
+#                 meta = dict(zip(keys, values))
 
-                cur.execute(
-                    f"INSERT INTO records (station_id, date_begin, date_end, size, path) VALUES \
-                    ({st['id']}, \
-                    '{meta['Date/Time Original']}', \
-                    '{meta['File Modification Date/Time']}', \
-                    '{meta['File Size']}', \
-                    '{nr}');"
-                )
+#                 cur.execute(
+#                     f"INSERT INTO records (station_id, date_begin, date_end, size, path) VALUES \
+#                     ({st['id']}, \
+#                     '{meta['Date/Time Original']}', \
+#                     '{meta['File Modification Date/Time']}', \
+#                     '{meta['File Size']}', \
+#                     '{nr}');"
+#                 )
 
-            for dr in deleted_records:
-                cur.execute(
-                    f"UPDATE records set deleted = True \
-                    WHERE station_id = {st['id']} AND path = {dr};"
-                )
+#             for dr in deleted_records:
+#                 cur.execute(
+#                     f"UPDATE records set deleted = True \
+#                     WHERE station_id = {st['id']} AND path = {dr};"
+#                 )
 
-        cur.execute(
-            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP \
-            WHERE job_name = 'records_check';"
-        )
-        db.commit()
-        cur.close()
+#         cur.execute(
+#             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP \
+#             WHERE job_name = 'records_check';"
+#         )
+#         db.commit()
+#         cur.close()

@@ -31,11 +31,30 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">{{ st['common_name'] }}</h5>
-                <p class="card-text">IP ({{ st['ip'] }}) reachable/unreachable</p>
-                <p class="card-text">Last record checked: {{ st['last_record'] }}</p>
-                <p class="card-text">graph hauteur d'eau</p>
-                <p class="card-text">4G data plan usage: {{ st['used_data'] }}/{{ st['monthly_data'] }}Mo</p>
-                <p class="card-text">4G data reset day: {{ st['reset_day'] }}. Data transfer scheluded for ....</p>
+                <table class="table">
+                    <tbody>
+                        <tr>
+                          <th scope="row">IP</th>
+                          <td>{{ st['ip'] }}</td>
+                          <td>reachable/unreachable</td>
+                        </tr>
+                        <tr>
+                          <th scope="row">Current water level</th>
+                          <td>{{ st['last_hydro']/100 }} m</td>
+                          <td>{{ st['last_hydro_time'] }}</td>
+                        </tr>
+                        <tr>
+                            <th scope="row">Current recording mode</th>
+                            <td>5fpm/3fps{{ st['current_recording'] }}</td>
+                            <td>Since {{ st['last_record_change'] }}</td>
+                          </tr>
+                        <tr>
+                          <th scope="row">4G data plan usage</th>
+                          <td>{{ st['used_data'] }}/{{ st['monthly_data'] / 1000}} Gb</td>
+                          <td>Reset on {{ st['reset_day'] }}</td>
+                        </tr>
+                      </tbody>
+                </table>
             </div>
             <div class="card-footer">
                 <small class="text-muted">added {{ st['created'].strftime('%Y-%m-%d') }}</small>

@@ -9,58 +9,18 @@
     </div>
     <div class="card-body">
         <form method="post">
+            {% for fd in fields.keys() %}
             <div class="mb-3 row">
-                <label for="common_name" class="col-sm-2 col-form-label">Station common name</label>
+                <label for="{{ fd }}" class="col-sm-2 col-form-label">{{fields[fd]['friendly_name']}}</label>
                 <div class="col-sm-10">
-                    <input type="text" name="common_name" class="form-control" id="common_name" required
-                        value="{{ request.form['common_name'] or station['common_name'] }}">
+                    <input type="{{ fields[fd]['type'] }}" name="{{ fd }}" class="form-control" id="{{ fd }}"
+                        value="{{ request.form[fd] or station[fd] }}"
+                        {% if fd == 'ip' %}pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$"{% endif %}
+                        {% if fields[fd]['required'] %}required{% endif %}>
                 </div>
             </div>
-            <div class="mb-3 row">
-                <label for="api_name" class="col-sm-2 col-form-label">Station API name</label>
-                <div class="col-sm-10">
-                    <input type="text" name="api_name" class="form-control" id="api_name"
-                        value="{{ request.form['api_name'] or station['api_name'] }}">
-                </div>
-            </div>
-            <div class="mb-3 row">
-                <label for="monthly_data" class="col-sm-2 col-form-label">4G monthly data plan (Mo)</label>
-                <div class="col-sm-10">
-                    <input type="number" name="monthly_data" class="form-control" id="monthly_data"
-                        value="{{ request.form['monthly_data'] or station['monthly_data'] }}">
-                </div>
-            </div>
-            <div class="mb-3 row">
-                <label for="reset_day" class="col-sm-2 col-form-label">4G plan reset day</label>
-                <div class="col-sm-10">
-                    <input type="number" name="reset_day" class="form-control" id="reset_day"
-                        value="{{ request.form['reset_day'] or station['reset_day'] }}">
-                </div>
-            </div>
-            <div class="mb-3 row">
-                <label for="phone_number" class="col-sm-2 col-form-label">4G phone number</label>
-                <div class="col-sm-10">
-                    <input type="text" name="phone_number" class="form-control" id="phone_number"
-                        value="{{ request.form['phone_number'] or station['phone_number'] }}">
-                </div>
-            </div>
-            <div class="mb-3 row">
-                <label for="ip" class="col-sm-2 col-form-label">Installation IP</label>
-                <div class="col-sm-10">
-                    <input minlength="7" maxlength="15" size="15"
-                        pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$" name="ip"
-                        class="form-control" id="ip" value="{{ request.form['ip'] or station['ip'] }}">
-                </div>
-            </div>
-            <div class="mb-3 row">
-                <label for="mqtt_prefix" class="col-sm-2 col-form-label">MQTT prefix</label>
-                <div class="col-sm-10">
-                    <input type="text" name="mqtt_prefix" class="form-control" id="mqtt_prefix"
-                    value="{{ request.form['mqtt_prefix'] or station['mqtt_prefix']}}">
-                </div>
-            </div>
-
-            <input type="submit" class="btn btn-primary" value="Update">
+            {% endfor %}
+             <input type="submit" class="btn btn-primary" value="Update">
         </form>
     </div>
     <div class="card-footer">

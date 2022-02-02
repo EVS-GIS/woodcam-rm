@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name='woodcam_rm',
+    name='woodcamrm',
     version='1.0.0',
     packages=find_packages(),
     include_package_data=True,
@@ -10,7 +10,8 @@ setup(
         'flask',
         'flask_restful',
         'requests',
-        'psycopg2',
-        'python-dotenv'
+        'psycopg2-binary',
+        'python-dotenv',
+        'paho-mqtt'
     ],
 )
