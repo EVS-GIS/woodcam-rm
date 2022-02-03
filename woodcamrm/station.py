@@ -115,14 +115,7 @@ def get_station(id):
 def station(id):
     station = get_station(id)
     
-    db = get_db()
-    cur = db.cursor(cursor_factory=RealDictCursor)
-    cur.execute(f"SELECT * FROM records WHERE station_id = {id};")
-    
-    records = cur.fetchall()
-    cur.close()
-    
-    return render_template('station/station.html', station=station, selected=id)
+    return render_template('station/station.html', station=station, selected=id, fields=station_fields)
 
 
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))

@@ -6,6 +6,6 @@ psycopg2-binary
 pytest
 pytest-dotenv
 coverage
-celery[redis]
 Flask-APScheduler
 paho-mqtt
+pysnmp

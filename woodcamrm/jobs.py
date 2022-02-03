@@ -1,12 +1,22 @@
-import os
-import glob
-import subprocess
+from threading import current_thread
 import requests
+import datetime
+
+import paho.mqtt.publish as publish
+
+from flask import (
+    Blueprint, redirect, url_for
+)
+from werkzeug.exceptions import abort
 
 from psycopg2.extras import RealDictCursor
+from pysnmp.hlapi import *
 
+from woodcamrm.auth import login_required
 from woodcamrm.extensions import scheduler
 from woodcamrm.db import get_db
+
+bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 
 @scheduler.task(
@@ -21,7 +31,7 @@ def alive_check():
         db = get_db()
         cur = db.cursor()
         cur.execute(
-            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP WHERE job_name = 'alive_check';"
+            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running'  WHERE job_name = 'alive_check';"
         )
         db.commit()
         cur.close()
@@ -50,21 +60,52 @@ def hydrodata_update():
                                         "size": 1})
                 hydrodata = rep.json()['data'][0]
                 
-                #TODO: Check si la valeur est au dessus ou en dessous du seuil pour le mois en cours puis:
-                # 1) update la table stations
-                # 2) envoyer un push sur MQTT
+                current_month = datetime.datetime.now().strftime("%B").lower()[:3] + "_threshold"
+                threshold = st[current_month]
+                current_recording = 'unknown'
+                trigger_time = st['last_record_change']
+                
+                if threshold:
+                    if hydrodata['resultat_obs'] >= threshold:
+                        if st['current_recording'] != "high_flow":
+                            trigger_time = datetime.datetime.now()
+                            
+                        current_recording = 'high_flow'
+                        publish.single(
+                            f"{st['mqtt_prefix']}/flow_trigger",
+                            "On",
+                            hostname=scheduler.app.config["MQTT_BROKER"],
+                            auth={"username": scheduler.app.config["MQTT_USER"], "password": scheduler.app.config["MQTT_PASSWORD"]},
+                            port=int(scheduler.app.config["MQTT_PORT"]),
+                            qos=1,
+                            retain=True,
+                        )
+                    else:
+                        if st['current_recording'] != "low_flow":
+                            trigger_time = datetime.datetime.now()
+                            
+                        current_recording = 'low_flow'
+                        publish.single(
+                            f"{st['mqtt_prefix']}/flow_trigger",
+                            "Off",
+                            hostname=scheduler.app.config["MQTT_BROKER"],
+                            auth={"username": scheduler.app.config["MQTT_USER"], "password": scheduler.app.config["MQTT_PASSWORD"]},
+                            port=int(scheduler.app.config["MQTT_PORT"]),
+                            qos=1,
+                            retain=True,
+                        )
 
                 cur.execute(
-                    f"UPDATE stations SET last_hydro_time = '{hydrodata['date_obs']}', last_hydro = {hydrodata['resultat_obs']} WHERE id = {st['id']};"
-                )
-            else:
-                cur.execute(
-                    f"UPDATE stations SET last_hydro_time = CURRENT_TIMESTAMP, last_hydro = 0 WHERE id = {st['id']};"
+                    f"UPDATE stations SET last_hydro_time = '{hydrodata['date_obs']}', \
+                        last_hydro = {hydrodata['resultat_obs']}, \
+                        current_recording = '{current_recording}', \
+                        last_record_change = '{trigger_time}'\
+                    WHERE id = {st['id']};"
                 )
 
 
         cur.execute(
-            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP WHERE job_name = 'hydrodata_update';"
+            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running'  WHERE job_name = 'hydrodata_update';"
         )
         db.commit()
         cur.close()
@@ -88,26 +129,89 @@ def check_data_plan():
         stations = cur.fetchall()
 
         for st in stations:
-            if st['ip']:
-                oid_received = scheduler.app.config["OID_DATA_RECEIVED"]
-                oid_transmitted = scheduler.app.config["OID_DATA_TRANSMITTED"]
-                received = subprocess.check_output(
-                        f"snmpget -v1 -c public {st['ip']} {oid_received}", shell=True
-                    ).split(b": ")[1]
-                transmitted = subprocess.check_output(
-                        f"snmpget -v1 -c public {st['ip']} {oid_transmitted}", shell=True
-                    ).split(b": ")[1]
-                total = (int(received) + int(transmitted)) * 10**-6
+            if st['ip']:    
+                total = 0
+                for oid in [scheduler.app.config["OID_DATA_RECEIVED"], scheduler.app.config["OID_DATA_TRANSMITTED"]]:
+                    iterator = getCmd(
+                        SnmpEngine(),
+                        CommunityData('public', mpModel=0),
+                        UdpTransportTarget((st['ip'], 161)),
+                        ContextData(),
+                        ObjectType(ObjectIdentity(oid))
+                    )
+
+                    errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+                    if errorIndication:
+                        print(errorIndication)
+                        cur.execute(
+                            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'error' WHERE job_name = 'check_data_plan';"
+                        )
+                        db.commit()
+                        cur.close()
+                        return
+                    elif errorStatus:
+                        print('%s at %s' % (errorStatus.prettyPrint(),
+                                            errorIndex and varBinds[int(errorIndex) - 1][0] or '?'))
+                        cur.execute(
+                            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'error' WHERE job_name = 'check_data_plan';"
+                        )
+                        db.commit()
+                        cur.close()
+                        return
+                    else:
+                        total += int(varBinds[0][1])
+
+                total = total * 10**-6
 
                 cur.execute(
                     f"UPDATE stations SET current_data = {total}, last_data_check = CURRENT_TIMESTAMP WHERE id = {st['id']};"
                 )
     
         cur.execute(
-            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP WHERE job_name = 'check_data_plan';"
+            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running' WHERE job_name = 'check_data_plan';"
         )
         db.commit()
         cur.close()
+
+
+# Manual jobs operations
+
+@bp.route('/<job>/run')
+@login_required
+def manual_run(job):
+    scheduler.get_job(id = job).modify(next_run_time=datetime.datetime.now())
+    return redirect(url_for('station.index'))
+
+
+@bp.route('/<job>/stop')
+@login_required
+def manual_stop(job):
+    scheduler.get_job(id = job).pause()
+
+    with scheduler.app.app_context():
+        db = get_db()
+        cur = db.cursor()    
+        cur.execute(f"UPDATE jobs SET state = 'stopped' WHERE job_name = '{job}';")
+        db.commit()
+        cur.close()
+    
+    return redirect(url_for('station.index'))
+
+
+@bp.route('/<job>/resume')
+@login_required
+def manual_resume(job):
+    scheduler.get_job(id = job).resume()
+
+    with scheduler.app.app_context():
+        db = get_db()
+        cur = db.cursor()    
+        cur.execute(f"UPDATE jobs SET state = 'running' WHERE job_name = '{job}';")
+        db.commit()
+        cur.close()
+    
+    return redirect(url_for('station.index'))
 
 # @scheduler.task(
 #     "interval",

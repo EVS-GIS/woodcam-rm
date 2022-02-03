@@ -1,35 +1,15 @@
 import os
 from psycopg2.extras import RealDictCursor
+from dotenv import dotenv_values
 
 from flask import Flask
 from .extensions import scheduler
-from celery import Celery
-
-
-celery = Celery(
-    __name__, broker="redis://127.0.0.1:6379", backend="redis://127.0.0.1:6379"
-)
 
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
-    app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY"),
-        DATABASE_SERVER=os.environ.get("DATABASE_SERVER"),
-        DATABASE_PORT=os.environ.get("DATABASE_PORT"),
-        DATABASE_NAME=os.environ.get("DATABASE_NAME"),
-        DATABASE_USER=os.environ.get("DATABASE_USER"),
-        DATABASE_PASSWORD=os.environ.get("DATABASE_PASSWORD"),
-        DEFAULT_USER=os.environ.get("DEFAULT_USER"),
-        DEFAULT_PASSWORD=os.environ.get("DEFAULT_PASSWORD"),
-        SCHEDULER_TIMEZONE=os.environ.get("TIMEZONE"),
-        API_URI=os.environ.get("API_URI"),
-        API_STATION_ID=os.environ.get("API_STATION_ID"),
-        API_OBSERVATION=os.environ.get("API_OBSERVATION"),
-        OID_DATA_RECEIVED=os.environ.get("OID_DATA_RECEIVED"),
-        OID_DATA_TRANSMITTED=os.environ.get("OID_DATA_TRANSMITTED")
-    )
+    app.config.from_mapping(dotenv_values())
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -48,15 +28,13 @@ def create_app(test_config=None):
 
     db.init_app(app)
 
-    # Celery for daemon processes
-    celery.conf.update(app.config)
-
     # APScheluder for CRON jobs
     scheduler.api_enabled = False
     scheduler.init_app(app)
 
     with app.app_context():
-        from . import jobs  # noqa: F401
+        from . import jobs 
+        app.register_blueprint(jobs.bp)
 
         scheduler.start()
 

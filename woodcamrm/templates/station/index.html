@@ -4,7 +4,7 @@
 
 {% block content %}
 <div class="row">
-    <h4>Running jobs</h4>
+    <h4>Background jobs</h4>
     <div class="card-group">
         {% for jb in jobs %}
         <div class="card">
@@ -13,7 +13,20 @@
                 <p class="card-text">{{jb['description']}}</p>
             </div>
             <div class="card-footer">
-                <small class="text-muted">
+                <a href="{{ url_for('jobs.manual_run', job=jb['job_name']) }}" class="btn btn-outline-success">Run job now</a>
+                {%if jb['state'] == 'stopped'%}
+                <a href="{{ url_for('jobs.manual_resume', job=jb['job_name']) }}" class="btn btn-outline-warning">Resume job</a>
+                {%else%}
+                <a href="{{ url_for('jobs.manual_stop', job=jb['job_name']) }}" class="btn btn-outline-info">Stop job</a>
+                {%endif%}
+            </div>
+            <div class="card-footer {%if jb['state'] == 'stopped'%}bg-info
+                                    {%elif jb['state'] == 'running'%}bg-success
+                                    {%elif jb['state'] == 'warn'%}bg-warning
+                                    {%elif jb['state'] == 'error'%}bg-danger
+                                    {%endif%}">
+                <small class="text">
+                    job state: {{jb['state']}} <br>
                     last execution: {% if jb['last_execution'] %}{{ jb['last_execution'].strftime('%Y-%m-%d %H:%M:%S') }}
                     {% else %}never{%endif%}
                 </small>
@@ -40,17 +53,17 @@
                         </tr>
                         <tr>
                           <th scope="row">Current water level</th>
-                          <td>{{ st['last_hydro']/100 }} m</td>
+                          <td>{% if st['last_hydro'] %}{{ st['last_hydro']/100 }}{% endif %} m</td>
                           <td>{{ st['last_hydro_time'] }}</td>
                         </tr>
                         <tr>
                             <th scope="row">Current recording mode</th>
-                            <td>5fpm/3fps{{ st['current_recording'] }}</td>
+                            <td>{{ st['current_recording'] }}</td>
                             <td>Since {{ st['last_record_change'] }}</td>
                           </tr>
                         <tr>
                           <th scope="row">4G data plan usage</th>
-                          <td>{{ st['current_data'] / 1000 }}/{{ st['monthly_data'] / 1000 }} Gb</td>
+                          <td>{% if st['current_data'] %}{{ st['current_data'] / 1000 }}{%endif%}/{% if st['monthly_data'] %}{{ st['monthly_data'] / 1000 }}{%endif%} Gb</td>
                           <td>Reset day: {{ st['reset_day'] }}</td>
                         </tr>
                       </tbody>

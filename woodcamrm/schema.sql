@@ -10,7 +10,7 @@ DROP TYPE IF EXISTS job_state;
 
 CREATE TYPE roles AS ENUM ('administrator', 'viewer');
 CREATE TYPE metrics AS ENUM ('H', 'Q');
-CREATE TYPE job_state AS ENUM ('ok', 'warn', 'error');
+CREATE TYPE job_state AS ENUM ('running', 'warn', 'error', 'stopped');
 
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -42,7 +42,7 @@ CREATE TABLE stations (
     last_hydro_time TIMESTAMP,
     last_hydro NUMERIC,
     current_recording TEXT,
-    last_record_change TIMESTAMP,
+    last_record_change TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     jan_threshold NUMERIC,
     feb_threshold NUMERIC,
     mar_threshold NUMERIC,
@@ -57,33 +57,33 @@ CREATE TABLE stations (
     dec_threshold NUMERIC
 );
 
-CREATE TABLE hydrodata (
-    id SERIAL PRIMARY KEY,
-    api_name TEXT NOT NULL,
-    metric metrics NOT NULL,
-    date_begin_serie TIMESTAMP,
-    date_obs_elab TIMESTAMP,
-    date_end_serie TIMESTAMP,
-    date_obs TIMESTAMP,
-    date_prod TIMESTAMP,
-    observation NUMERIC,
-    observation_elab NUMERIC
-);
+-- CREATE TABLE hydrodata (
+--     id SERIAL PRIMARY KEY,
+--     api_name TEXT NOT NULL,
+--     metric metrics NOT NULL,
+--     date_begin_serie TIMESTAMP,
+--     date_obs_elab TIMESTAMP,
+--     date_end_serie TIMESTAMP,
+--     date_obs TIMESTAMP,
+--     date_prod TIMESTAMP,
+--     observation NUMERIC,
+--     observation_elab NUMERIC
+-- );
 
-CREATE TABLE records (
-    id SERIAL PRIMARY KEY,
-    station_id INTEGER NOT NULL,
-    date_begin TIMESTAMP,
-    date_end TIMESTAMP,
-    size TEXT,
-    path TEXT NOT NULL,
-    downloaded BOOLEAN NOT NULL DEFAULT FALSE,
-    deleted BOOLEAN NOT NULL DEFAULT FALSE,
-    flagged BOOLEAN NOT NULL DEFAULT FALSE,
-    hydro_min NUMERIC,
-    hydro_max NUMERIC,
-    hydro_mean NUMERIC
-);
+-- CREATE TABLE records (
+--     id SERIAL PRIMARY KEY,
+--     station_id INTEGER NOT NULL,
+--     date_begin TIMESTAMP,
+--     date_end TIMESTAMP,
+--     size TEXT,
+--     path TEXT NOT NULL,
+--     downloaded BOOLEAN NOT NULL DEFAULT FALSE,
+--     deleted BOOLEAN NOT NULL DEFAULT FALSE,
+--     flagged BOOLEAN NOT NULL DEFAULT FALSE,
+--     hydro_min NUMERIC,
+--     hydro_max NUMERIC,
+--     hydro_mean NUMERIC
+-- );
 
 CREATE TABLE jobs (
     id SERIAL PRIMARY KEY,
@@ -92,6 +92,6 @@ CREATE TABLE jobs (
     full_name TEXT NOT NULL,
     description TEXT,
     last_execution TIMESTAMP,
-    state job_state,
+    state job_state DEFAULT 'warn',
     message TEXT
 );

@@ -51,9 +51,9 @@ def init_db():
             "INSERT INTO jobs (job_name, priority, full_name, description) VALUES \
                 ('alive_check', 10, 'Alive check', 'Check if all jobs and cameras are running correctly and send mail notifications if needed.'), \
                 ('hydrodata_update', 20, 'Update hydro metrics', 'Update hydro metrics with external API and trigger recording if needed.'), \
-                ('records_check', 40, 'Check records', 'Check records received from camera.'), \
+                ('records_check', 40, 'Check records', 'Check and classify records received from camera.'), \
                 ('download_records', 50, 'Download records', 'Download missing records after a service interruption.'), \
-                ('check_data_plan', 30, 'Check data plan', 'Estimate 4G data plan state.');"
+                ('check_data_plan', 30, 'Check data plan', 'Estimate 4G data plan usage.');"
         )
         db.commit()
         cur.close()

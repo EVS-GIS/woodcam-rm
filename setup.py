@@ -8,10 +8,10 @@ setup(
     zip_safe=False,
     install_requires=[
         'flask',
-        'flask_restful',
         'requests',
         'psycopg2-binary',
         'python-dotenv',
-        'paho-mqtt'
+        'paho-mqtt',
+        'pysnnmp'
     ],
 )

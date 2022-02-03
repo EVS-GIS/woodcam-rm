@@ -3,10 +3,17 @@
 {% block title %}Station {{ station['common_name'] }}{% endblock %}
 
 {% block content %}
-Last hydro value: {{station['last_hydro']}}
-Last hydro time: {{station['last_hydro_time']}}
-
-<form action="{{ url_for('station.update', id=station['id']) }}" method="get">
-    <input class="btn btn-info" type="submit" value="Update station settings">
-</form>
+<h4>Station status</h4>
+<h4>Station settings</h4>
+<a href="{{ url_for('station.update', id=station['id']) }}" class="btn btn-primary">Modify station settings</a>
+<table class="table table-hover">
+    <tbody>
+        {% for fd in fields.keys() %}
+        <tr>
+            <th scope="row">{{fields[fd]['friendly_name']}}</th>
+            <td>{{station[fd]}}</td>
+        </tr>
+        {%endfor%}
+    </tbody>
+</table>
 {% endblock %}

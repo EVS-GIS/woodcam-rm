@@ -3,7 +3,8 @@ WoodCam Records Manager
 
 # Requirements
 
-* snmp
+* snmp enabled router
+* mqtt enabled cameras
 * mqtt broker (eg. mosquitto)
 
 # Quick start
@@ -12,8 +13,8 @@ WoodCam Records Manager
     python -m venv env --prompt woodcam-rm
     source env/bin/activate
 
-    # Install dependencies
-    python -m pip install -r requirements.txt
+    # Install package and dependencies
+    python -m pip install -e .
 
     # Customize .env file
     cp .env.example .env
