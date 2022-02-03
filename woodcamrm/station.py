@@ -152,7 +152,7 @@ def update(id):
                 db.commit()
 
             except db.IntegrityError:
-                error = f"Station {common_name} already exists."
+                error = f"Station {fields['common_name']['value']} already exists."
             else:
                 scheduler.get_job(id ="hydrodata_update").modify(next_run_time=datetime.datetime.now())
                 scheduler.get_job(id ="check_data_plan").modify(next_run_time=datetime.datetime.now())

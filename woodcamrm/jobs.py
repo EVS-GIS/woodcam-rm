@@ -21,30 +21,14 @@ bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
 @scheduler.task(
     "interval",
-    id="alive_check",
-    seconds=60,
-    max_instances=1,
-    start_date="2022-01-01 12:00:00",
-)
-def alive_check():
-    with scheduler.app.app_context():
-        db = get_db()
-        cur = db.cursor()
-        cur.execute(
-            "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running'  WHERE job_name = 'alive_check';"
-        )
-        db.commit()
-        cur.close()
-
-
-@scheduler.task(
-    "interval",
     id="hydrodata_update",
     seconds=60*30,
     max_instances=1,
     start_date="2022-01-01 12:00:00",
 )
 def hydrodata_update():
+    """This job update the hydro metrics and check if the thresholds are triggered.
+    """
     with scheduler.app.app_context():
         db = get_db()
         cur = db.cursor(cursor_factory=RealDictCursor)
@@ -52,7 +36,10 @@ def hydrodata_update():
         stations = cur.fetchall()
         
         for st in stations:
+            # Check if API_name is informed for the station
             if st['api_name']:
+                
+                # Request external API
                 rep = requests.get(scheduler.app.config["API_URI"],
                                 data={"code_entite": st['api_name'],
                                         "grandeur_hydro": "H",
@@ -60,17 +47,27 @@ def hydrodata_update():
                                         "size": 1})
                 hydrodata = rep.json()['data'][0]
                 
+                # Retrieve trigger threshold for the current month
                 current_month = datetime.datetime.now().strftime("%B").lower()[:3] + "_threshold"
                 threshold = st[current_month]
+                
+                # Update current_recording mode and lasttime of recording mode change 
                 current_recording = 'unknown'
                 trigger_time = st['last_record_change']
                 
+                # Check if a threshold is informed for the current month
                 if threshold:
+                    
+                    # Check if threshold is triggered
                     if hydrodata['resultat_obs'] >= threshold:
+                        # Check if the recording mode is not already "high_flow"
                         if st['current_recording'] != "high_flow":
+                            # Update recording mode change time
                             trigger_time = datetime.datetime.now()
                             
                         current_recording = 'high_flow'
+                        
+                        # Push the recording mode to the MQTT broker
                         publish.single(
                             f"{st['mqtt_prefix']}/flow_trigger",
                             "On",
@@ -80,11 +77,16 @@ def hydrodata_update():
                             qos=1,
                             retain=True,
                         )
+                        
                     else:
+                        # Check if the recording mode is not already "low_flow"
                         if st['current_recording'] != "low_flow":
+                            # Update recording mode change time
                             trigger_time = datetime.datetime.now()
                             
                         current_recording = 'low_flow'
+                        
+                        # Push the recording mode to the MQTT broker
                         publish.single(
                             f"{st['mqtt_prefix']}/flow_trigger",
                             "Off",
@@ -95,6 +97,7 @@ def hydrodata_update():
                             retain=True,
                         )
 
+                # Update the stations table in the database
                 cur.execute(
                     f"UPDATE stations SET last_hydro_time = '{hydrodata['date_obs']}', \
                         last_hydro = {hydrodata['resultat_obs']}, \
@@ -103,7 +106,7 @@ def hydrodata_update():
                     WHERE id = {st['id']};"
                 )
 
-
+        # Update the jobs table in the database
         cur.execute(
             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running'  WHERE job_name = 'hydrodata_update';"
         )
@@ -119,9 +122,8 @@ def hydrodata_update():
     start_date="2022-01-01 12:00:00",
 )
 def check_data_plan():
-    '''
-    Retrieve data usage from router using SNMP protocol.
-    '''
+    """Retrieve data usage from router using SNMP protocol.
+    """
     with scheduler.app.app_context():
         db = get_db()
         cur = db.cursor(cursor_factory=RealDictCursor)
@@ -129,9 +131,13 @@ def check_data_plan():
         stations = cur.fetchall()
 
         for st in stations:
+            # Check if station IP is informed
             if st['ip']:    
                 total = 0
+                
+                # Loop over the two OIDs (transmitted and received)
                 for oid in [scheduler.app.config["OID_DATA_RECEIVED"], scheduler.app.config["OID_DATA_TRANSMITTED"]]:
+                    # Retrieve value from SNMP agent
                     iterator = getCmd(
                         SnmpEngine(),
                         CommunityData('public', mpModel=0),
@@ -160,14 +166,18 @@ def check_data_plan():
                         cur.close()
                         return
                     else:
+                        # Add value to total
                         total += int(varBinds[0][1])
 
+                # Convert total from bytes to Mb
                 total = total * 10**-6
-
+                
+                # Update stations table on the database
                 cur.execute(
                     f"UPDATE stations SET current_data = {total}, last_data_check = CURRENT_TIMESTAMP WHERE id = {st['id']};"
                 )
-    
+
+        # Update jobs table on the database
         cur.execute(
             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running' WHERE job_name = 'check_data_plan';"
         )
@@ -212,6 +222,7 @@ def manual_resume(job):
         cur.close()
     
     return redirect(url_for('station.index'))
+
 
 # @scheduler.task(
 #     "interval",
@@ -276,6 +287,24 @@ def manual_resume(job):
 #         cur.execute(
 #             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP \
 #             WHERE job_name = 'records_check';"
+#         )
+#         db.commit()
+#         cur.close()
+
+
+# @scheduler.task(
+#     "interval",
+#     id="alive_check",
+#     seconds=60,
+#     max_instances=1,
+#     start_date="2022-01-01 12:00:00",
+# )
+# def alive_check():
+#     with scheduler.app.app_context():
+#         db = get_db()
+#         cur = db.cursor()
+#         cur.execute(
+#             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running'  WHERE job_name = 'alive_check';"
 #         )
 #         db.commit()
 #         cur.close()
