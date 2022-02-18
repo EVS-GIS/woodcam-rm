@@ -1,7 +1,9 @@
+import cv2
+
 from datetime import datetime
 
 from flask import (
-    Blueprint, flash, g, redirect, render_template, request, url_for
+    Blueprint, flash, g, Response, redirect, render_template, request, url_for
 )
 from werkzeug.exceptions import abort
 from sqlalchemy import exc
@@ -64,18 +66,15 @@ def add():
 
         if error is not None:
             flash(error)
-        else:
-            db = get_db()
-            
+        else:  
+            new_station = Stations()     
+            for fd in fields.keys():
+                if fields[fd]['value']:
+                    setattr(new_station, fd, fields[fd]['value'])
+                    
             try:
-                insert_into = "".join([f"{fd}, " for fd in fields.keys() if fields[fd]['value']])
-                values = "".join([f"'{fields[fd]['value']}', " for fd in fields.keys() if fields[fd]['value']])
-                sql = "INSERT INTO stations (" + insert_into[:-2] + ") VALUES (" + values[:-2] + ");"
-
-                cur = db.cursor()
-                cur.execute(sql)
-                cur.close()
-                db.commit()
+                dbsql.session.add(new_station)
+                dbsql.session.commit()
 
             except exc.IntegrityError:
                 error = f"Station {fields['common_name']['value']} is already registered."
@@ -102,6 +101,22 @@ def station(id):
     station = get_station(id)
     
     return render_template('station/station.html', station=station, selected=id, fields=station_fields)
+        
+        
+@bp.route("/<int:id>/stream")
+def stream(id):
+    station = get_station(id)
+    
+    camera = cv2.VideoCapture(f"rtsp://{station.ip}/axis-media/media.amp?resolution=320x240&fps=1")
+    success, frame = camera.read()
+    
+    if not success:
+        return Response()
+    
+    _, encodedImage = cv2.imencode(".jpg", frame)
+    frame = b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + bytearray(encodedImage) + b'\r\n'
+    
+    return Response(frame, mimetype = "multipart/x-mixed-replace; boundary=frame")
 
 
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))

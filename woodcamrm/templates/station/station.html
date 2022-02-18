@@ -4,6 +4,54 @@
 
 {% block content %}
 <h4>Station status</h4>
+<div class="row">
+    <div class="col-sm-6">
+        <div class="card" style="width: 320px;height: 240px;">
+            <img class="card-img-top" src="{{ url_for('station.stream', id = station.id) }}" alt="Stream not available">
+        </div>
+    </div>
+    <div class="col-sm-6">
+        <div class="card">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th scope="row">Temperature alert</th>
+                        <td>{{ station.temp_alert }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">SD storage alert</th>
+                        <td>{{ station.sd_alert }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">SD storage disruption</th>
+                        <td>{{ station.sd_disruption }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Tampering alert</th>
+                        <td>{{ station.tampering }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Current water level</th>
+                        <td>{% if station.last_hydro %}{{ station.last_hydro/1000 }}{% endif %} m</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Current recording mode</th>
+                        <td>{{ station.current_recording.value }}
+                            {%if station.current_daymode == 1%}<span class="iconify" data-icon="emojione:sun">day mode</span>
+                            {%elif station.current_daymode == 0%}<span class="iconify" data-icon="bi:moon-fill">night
+                                mode</span>
+                            {%endif%}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">4G data plan usage</th>
+                        <td>{% if station.current_data %}{{ station.current_data / 1000 }}{%endif%}/{% if station.monthly_data %}{{
+                            station.monthly_data / 1000 }}{%endif%} Gb</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 <h4>Station settings</h4>
 <a href="{{ url_for('station.update', id=station.id) }}" class="btn btn-primary">Modify station settings</a>
 <table class="table table-hover">
