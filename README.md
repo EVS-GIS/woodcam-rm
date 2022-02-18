@@ -51,6 +51,34 @@ The .env file contains all settings to initialize and run WoodCam RM.
 - Set a default user and password for the app (will be created at ```flask init-db``` run). 
 - Set ```SCHEDULER_TIMEZONE``` with your one.
 
+# Production considerations
+## Run prod with gunicorn
+```bash
+python -m pip install gunicorn
+gunicorn -w 1 'woodcamrm:create_app()'
+```
+
+Service file /etc/systemd/system/woodcamrm.service
+```
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/woodcam-rm
+Environment="PATH=/var/www/woodcam-rm/env/bin"
+ExecStart=/var/www/woodcam-rm/env/bin/gunicorn --workers 1 --bind 127.0.0.1:8000 'woodcamrm:create_app()'
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable service
+```bash
+sudo systemctl enable woodcamrm.service
+sudo systemctl start woodcamrm.service
+```
+
 # Deploy this app using docker
 
 - Copy the example .env file and make the required configuration changes (database, etc...)

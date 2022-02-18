@@ -13,6 +13,7 @@ setup(
         'flask-mqtt',
         'requests',
         'python-dotenv',
-        'pysnmp'
+        'pysnmp',
+        'psycopg2-binary'
     ],
 )
