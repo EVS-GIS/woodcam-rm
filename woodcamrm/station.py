@@ -1,15 +1,14 @@
-import datetime
+from datetime import datetime
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, url_for
 )
 from werkzeug.exceptions import abort
-
-from psycopg2.extras import RealDictCursor
+from sqlalchemy import exc
 
 from woodcamrm.auth import login_required
-from woodcamrm.db import get_db
-from .extensions import scheduler
+from woodcamrm.db import Stations, Jobs
+from woodcamrm.extensions import dbsql, scheduler
 
 bp = Blueprint('station', __name__, url_prefix='/station')
 
@@ -22,37 +21,27 @@ station_fields = {
         'phone_number': {'type': "text", 'required': False, 'friendly_name': 'Phone number', 'value': None},
         'ip': {'type': "text", 'required': False, 'friendly_name': 'IP', 'value': None},
         'mqtt_prefix': {'type': "text", 'required': False, 'friendly_name': 'MQTT prefix', 'value': None},
-        'jan_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold january', 'value': None},
-        'feb_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold february', 'value': None},
-        'mar_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold march', 'value': None},
-        'apr_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold april', 'value': None},
-        'may_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold may', 'value': None},
-        'jun_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold june', 'value': None},
-        'jul_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold july', 'value': None},
-        'aug_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold august', 'value': None},
-        'sep_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold september', 'value': None},
-        'oct_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold october', 'value': None},
-        'nov_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold november', 'value': None},
-        'dec_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold december', 'value': None}
+        'jan_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold january (mm)', 'value': None},
+        'feb_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold february (mm)', 'value': None},
+        'mar_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold march (mm)', 'value': None},
+        'apr_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold april (mm)', 'value': None},
+        'may_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold may (mm)', 'value': None},
+        'jun_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold june (mm)', 'value': None},
+        'jul_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold july (mm)', 'value': None},
+        'aug_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold august (mm)', 'value': None},
+        'sep_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold september (mm)', 'value': None},
+        'oct_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold october (mm)', 'value': None},
+        'nov_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold november (mm)', 'value': None},
+        'dec_threshold': {'type': "number", 'required': False, 'friendly_name': 'Water level threshold december (mm)', 'value': None}
     }
 
 
 @bp.route('/')
 @login_required
 def index():
-    db = get_db()
-    cur = db.cursor(cursor_factory=RealDictCursor)
-    cur.execute(
-        "SELECT * FROM stations ORDER BY created DESC;"
-    )
-    stations = cur.fetchall()
+    stations = Stations.query.all()
+    jobs = Jobs.query.all()
     
-    cur.execute(
-        "SELECT * FROM jobs ORDER BY priority ASC;"
-    )
-    jobs = cur.fetchall()
-    
-    cur.close()
     return render_template('station/index.html', 
                            stations=stations, 
                            selected='dashboard',
@@ -88,21 +77,18 @@ def add():
                 cur.close()
                 db.commit()
 
-            except db.IntegrityError:
+            except exc.IntegrityError:
                 error = f"Station {fields['common_name']['value']} is already registered."
             else:
-                scheduler.get_job(id ="hydrodata_update").modify(next_run_time=datetime.datetime.now())
-                scheduler.get_job(id ="check_data_plan").modify(next_run_time=datetime.datetime.now())
+                scheduler.get_job(id ="hydrodata_update").modify(next_run_time=datetime.now())
+                scheduler.get_job(id ="check_data_plan").modify(next_run_time=datetime.now())
                 return redirect(url_for('station.index'))
 
     return render_template('station/add.html', selected='addstation', fields=fields)
 
 
 def get_station(id):
-    db = get_db()
-    cur = db.cursor(cursor_factory=RealDictCursor)
-    cur.execute(f"SELECT * FROM stations WHERE id = {id};")
-    station = cur.fetchone()
+    station = Stations.query.filter_by(id=id).first()
 
     if station is None:
         abort(404, f"Station {id} doesn't exist.")
@@ -126,7 +112,7 @@ def update(id):
 
     if request.method == 'GET':
         for fd in fields.keys():
-            fields[fd]['value'] = station[fd]
+            fields[fd]['value'] = getattr(station, fd)
 
     elif request.method == 'POST':
         for fd in fields.keys():
@@ -139,23 +125,20 @@ def update(id):
 
         if error is not None:
             flash(error)
-        else:
-            db = get_db()
-            
+        else:         
             try:
-                data_sql = "".join([f"{fd} = '{fields[fd]['value']}', " for fd in fields.keys() if fields[fd]['value']])
-                sql = "UPDATE stations SET " + data_sql[:-2] + f" WHERE id = {id};"
+                for fd in fields.keys():
+                    if fields[fd]['value']:
+                        setattr(station, fd, fields[fd]['value'])
+                
+                dbsql.session.commit()
 
-                cur = db.cursor()
-                cur.execute(sql)
-                cur.close()
-                db.commit()
-
-            except db.IntegrityError:
+            except exc.IntegrityError:
                 error = f"Station {fields['common_name']['value']} already exists."
+                
             else:
-                scheduler.get_job(id ="hydrodata_update").modify(next_run_time=datetime.datetime.now())
-                scheduler.get_job(id ="check_data_plan").modify(next_run_time=datetime.datetime.now())
+                scheduler.get_job(id ="hydrodata_update").modify(next_run_time=datetime.now())
+                scheduler.get_job(id ="check_data_plan").modify(next_run_time=datetime.now())
                 return redirect(url_for('station.index'))
 
     return render_template('station/update.html', station=station, selected=id, fields=fields)

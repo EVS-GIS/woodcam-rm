@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
 
-{% block title %}Station {{ station['common_name'] }}{% endblock %}
+{% block title %}Station {{ station.common_name }}{% endblock %}
 
 {% block content %}
 <h4>Station status</h4>
 <h4>Station settings</h4>
-<a href="{{ url_for('station.update', id=station['id']) }}" class="btn btn-primary">Modify station settings</a>
+<a href="{{ url_for('station.update', id=station.id) }}" class="btn btn-primary">Modify station settings</a>
 <table class="table table-hover">
     <tbody>
         {% for fd in fields.keys() %}

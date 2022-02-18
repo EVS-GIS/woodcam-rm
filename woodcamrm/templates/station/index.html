@@ -9,25 +9,25 @@
         {% for jb in jobs %}
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">{{ jb['full_name'] }}</h5>
-                <p class="card-text">{{jb['description']}}</p>
+                <h5 class="card-title">{{ jb.full_name }}</h5>
+                <p class="card-text">{{jb.description}}</p>
             </div>
             <div class="card-footer">
-                <a href="{{ url_for('jobs.manual_run', job=jb['job_name']) }}" class="btn btn-outline-success">Run job now</a>
-                {%if jb['state'] == 'stopped'%}
-                <a href="{{ url_for('jobs.manual_resume', job=jb['job_name']) }}" class="btn btn-outline-warning">Resume job</a>
+                <a href="{{ url_for('jobs.manual_run', job=jb.job_name) }}" class="btn btn-outline-success">Run job now</a>
+                {%if jb.state.name == 'stopped'%}
+                <a href="{{ url_for('jobs.manual_resume', job=jb.job_name) }}" class="btn btn-outline-warning">Resume job</a>
                 {%else%}
-                <a href="{{ url_for('jobs.manual_stop', job=jb['job_name']) }}" class="btn btn-outline-info">Stop job</a>
+                <a href="{{ url_for('jobs.manual_stop', job=jb.job_name) }}" class="btn btn-outline-info">Stop job</a>
                 {%endif%}
             </div>
-            <div class="card-footer {%if jb['state'] == 'stopped'%}bg-info
-                                    {%elif jb['state'] == 'running'%}bg-success
-                                    {%elif jb['state'] == 'warn'%}bg-warning
-                                    {%elif jb['state'] == 'error'%}bg-danger
+            <div class="card-footer {%if jb.state.name == 'stopped'%}bg-info
+                                    {%elif jb.state.name == 'running'%}bg-success
+                                    {%elif jb.state.name == 'warn'%}bg-warning
+                                    {%elif jb.state.name == 'error'%}bg-danger
                                     {%endif%}">
                 <small class="text">
-                    job state: {{jb['state']}} <br>
-                    last execution: {% if jb['last_execution'] %}{{ jb['last_execution'].strftime('%Y-%m-%d %H:%M:%S') }}
+                    job state: {{jb.state.value}} <br>
+                    last execution: {% if jb.last_execution %}{{ jb.last_execution.strftime('%Y-%m-%d %H:%M:%S') }}
                     {% else %}never{%endif%}
                 </small>
             </div>
@@ -43,34 +43,37 @@
         {% for st in stations %}
         <div class="card">
             <div class="card-body">
-                <h5 class="card-title">{{ st['common_name'] }}</h5>
+                <h5 class="card-title">{{ st.common_name }}</h5>
                 <table class="table">
                     <tbody>
                         <tr>
                           <th scope="row">IP</th>
-                          <td>{{ st['ip'] }}</td>
+                          <td>{{ st.ip }}</td>
                           <td>reachable/unreachable</td>
                         </tr>
                         <tr>
                           <th scope="row">Current water level</th>
-                          <td>{% if st['last_hydro'] %}{{ st['last_hydro']/100 }}{% endif %} m</td>
-                          <td>{{ st['last_hydro_time'] }}</td>
+                          <td>{% if st.last_hydro %}{{ st.last_hydro/1000 }}{% endif %} m</td>
+                          <td>{{ st.last_hydro_time }}</td>
                         </tr>
                         <tr>
                             <th scope="row">Current recording mode</th>
-                            <td>{{ st['current_recording'] }}</td>
-                            <td>Since {{ st['last_record_change'] }}</td>
+                            <td>{{ st.current_recording.value }} 
+                                {%if st.current_daymode == 1%}<span class="iconify" data-icon="emojione:sun">day mode</span>
+                                {%elif st.current_daymode == 0%}<span class="iconify" data-icon="bi:moon-fill">night mode</span>
+                                {%endif%}</td>
+                            <td>Since {{ st.last_record_change }}</td>
                           </tr>
                         <tr>
                           <th scope="row">4G data plan usage</th>
-                          <td>{% if st['current_data'] %}{{ st['current_data'] / 1000 }}{%endif%}/{% if st['monthly_data'] %}{{ st['monthly_data'] / 1000 }}{%endif%} Gb</td>
-                          <td>Reset day: {{ st['reset_day'] }}</td>
+                          <td>{% if st.current_data %}{{ st.current_data / 1000 }}{%endif%}/{% if st.monthly_data %}{{ st.monthly_data / 1000 }}{%endif%} Gb</td>
+                          <td>Reset day: {{ st.reset_day }}</td>
                         </tr>
                       </tbody>
                 </table>
             </div>
             <div class="card-footer">
-                <small class="text-muted">added {{ st['created'].strftime('%Y-%m-%d') }}</small>
+                <small class="text-muted">added {{ st.created.strftime('%Y-%m-%d') }}</small>
             </div>
         </div>
         {% endfor %}

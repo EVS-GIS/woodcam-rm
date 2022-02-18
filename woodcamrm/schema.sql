@@ -43,6 +43,7 @@ CREATE TABLE stations (
     last_hydro NUMERIC,
     current_recording TEXT,
     last_record_change TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    current_daymode INTEGER,
     jan_threshold NUMERIC,
     feb_threshold NUMERIC,
     mar_threshold NUMERIC,

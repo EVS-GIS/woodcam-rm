@@ -8,10 +8,11 @@ setup(
     zip_safe=False,
     install_requires=[
         'flask',
+        'flask-sqlalchemy',
+        'flask-apscheduler',
+        'flask-mqtt',
         'requests',
-        'psycopg2-binary',
         'python-dotenv',
-        'paho-mqtt',
-        'pysnnmp'
+        'pysnmp'
     ],
 )

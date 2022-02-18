@@ -1,16 +1,19 @@
 import os
-from psycopg2.extras import RealDictCursor
 from dotenv import dotenv_values
 
 from flask import Flask
-from .extensions import scheduler
+from woodcamrm.extensions import mqtt, dbsql, scheduler
+
+from woodcamrm.db import Stations
 
 
 def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(dotenv_values())
-
+    app.config['MQTT_BROKER_PORT'] = int(app.config['MQTT_BROKER_PORT'])
+    app.config['MQTT_TLS_ENABLED'] = False
+    
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile("config.py", silent=True)
@@ -24,9 +27,14 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    # Database
     from . import db
 
+    dbsql.init_app(app)
     db.init_app(app)
+
+    with app.app_context(): 
+        stations = Stations.query.all()
 
     # APScheluder for CRON jobs
     scheduler.api_enabled = False
@@ -37,16 +45,31 @@ def create_app(test_config=None):
         app.register_blueprint(jobs.bp)
 
         scheduler.start()
+        
+    # MQTT client
+    from . import mqtt_client
+    mqtt.init_app(app)
+        
+    @mqtt.on_connect()
+    def handle_connect(client, userdata, flags, rc):
+        with app.app_context():
+            stations = Stations.query.all()
+            if stations:
+                mqtt_client.subscribe_topics(stations)
+                    
+    @mqtt.on_message()
+    def handle_mqtt_message(client, userdata, message):
+        with app.app_context():
+            stations = Stations.query.all()
+            mqtt_data = mqtt_client.to_dict(stations, message)
+            
+            setattr(mqtt_data['station'], mqtt_data['topic'], mqtt_data['data'])
+            dbsql.session.commit()
+            
 
     # List all stations for sidebar
     @app.context_processor
     def inject_pages():
-        database = db.get_db()
-        cur = database.cursor(cursor_factory=RealDictCursor)
-        cur.execute("SELECT id, common_name FROM stations;")
-        stations = cur.fetchall()
-        cur.close()
-
         return dict(pages=stations)
 
     from . import auth
