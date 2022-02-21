@@ -1,4 +1,5 @@
 import enum
+from gc import is_finalized
 import click
 
 from flask import current_app
@@ -147,13 +148,18 @@ def init_db():
 
 
 @click.command("init-db")
+@click.option("--yes", "-y", is_flag=True, help="Don't ask for confirmation.")
 @with_appcontext
-def init_db_command():
+def init_db_command(yes):
     """Clear the existing data and create new tables."""
 
-    confirmation = input(
-        "Warning: this irreversible action will completely reset any existing WoodCamRM database. Are you sure? [y/N]"
-    )
+    if yes:
+        confirmation = "yes"
+    else:
+        confirmation = input(
+            "Warning: this irreversible action will completely reset any existing WoodCamRM database. Are you sure? [y/N]"
+        )
+        
     if confirmation.lower() in ["y", "yes"]:
         init_db()
         click.echo("Initialized the database.")
@@ -164,6 +170,3 @@ def init_db_command():
 def init_app(app):
     app.cli.add_command(init_db_command)
     
-    
-def get_db():
-    return 'foo'

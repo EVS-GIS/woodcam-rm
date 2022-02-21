@@ -3,6 +3,7 @@ from dotenv import dotenv_values
 
 from flask import Flask
 from woodcamrm.extensions import mqtt, dbsql, scheduler
+from sqlalchemy import exc
 
 from woodcamrm.db import Stations
 
@@ -34,7 +35,11 @@ def create_app(test_config=None):
     db.init_app(app)
 
     with app.app_context(): 
-        stations = Stations.query.all()
+        try:
+            stations = Stations.query.all()
+        except exc.ProgrammingError:
+            stations = []
+            print('The database appears to be empty. Please run flask init-db first.')
 
     # APScheluder for CRON jobs
     scheduler.api_enabled = False
@@ -48,7 +53,8 @@ def create_app(test_config=None):
         
     # MQTT client
     from . import mqtt_client
-    mqtt.init_app(app)
+    if stations:
+        mqtt.init_app(app)
         
     @mqtt.on_connect()
     def handle_connect(client, userdata, flags, rc):

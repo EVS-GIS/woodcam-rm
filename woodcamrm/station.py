@@ -162,10 +162,8 @@ def update(id):
 @bp.route('/<int:id>/delete', methods=('POST',))
 @login_required
 def delete(id):
-    get_station(id)
-    db = get_db()
-    cur = db.cursor()
-    cur.execute(f"DELETE FROM stations WHERE id = {id};")
-    cur.close()
-    db.commit()
+    station = get_station(id)
+    dbsql.session.delete(station)
+    dbsql.session.commit()
+    
     return redirect(url_for('station.index'))
