@@ -79,19 +79,29 @@ sudo systemctl enable woodcamrm.service
 sudo systemctl start woodcamrm.service
 ```
 
-# Deploy this app using docker
+# Deploy this app and all dependencies using docker-compose
 
 - Copy the example .env file and make the required configuration changes (database, etc...)
+- Install docker-compose (https://docs.docker.com/compose/install/)
 
 ```bash
-# Build image
-docker build -t my-woodcam-rm:$(git rev-parse --short HEAD) .
+# Create containers and persistent volumes
+docker-compose up --no-start
 
-# If the database is a new empty instance, initialize it
-docker run -it --rm my-woodcam-rm:$(git rev-parse --short HEAD) flask init-db
+# Copy MQTT broker configuration
+docker run --rm -v $PWD:/source -v woodcam-rm_mqtt-config:/dest -w /source eclipse-mosquitto:2.0.11-openssl cp -f mosquitto/* /dest
 
-# Run a container and access the application at localhost:5050 (customize ports for production environment)
-docker run -it --rm -p 5050:5000 --name my-woodcam-rm-instance my-woodcam-rm:$(git rev-parse --short HEAD)
+# Add MQTT user
+docker run -it --rm -v woodcam-rm_mqtt-config:/mosquitto/config eclipse-mosquitto:2.0.11-openssl mosquitto_passwd -b /mosquitto/config/passwordfile <user> <password>
+
+# Run containers
+docker-compose up -d
+
+# Create database
+docker exec woodcam-rm_app_1 flask init-db -y
+
+# Restart services
+docker-compose restart
 ```
 
 # Run development tests (testing database needed)

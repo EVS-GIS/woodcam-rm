@@ -1,0 +1,53 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:13.5-alpine
+    environment:
+      POSTGRES_DB: $POSTGRES_DB
+      POSTGRES_USER: $POSTGRES_USER
+      POSTGRES_PASSWORD: $POSTGRES_PASSWORD
+    healthcheck:
+      test: pg_isready -d ${POSTGRES_DB} -U ${POSTGRES_USER}
+      interval: 5s
+      timeout: 3s
+      retries: 6
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  rtsp:
+    image: aler9/rtsp-simple-server
+    environment:
+      RTSP_API: "yes"
+      RTSP_PROTOCOLS: "tcp"
+  
+  mqtt:
+    image: eclipse-mosquitto:2.0.11-openssl
+    ports:
+      - '1883:1883'
+    volumes:
+      - mqtt-data:/mosquitto/data
+      - mqtt-config:/mosquitto/config
+    healthcheck:
+      test: timeout 1 mosquitto_sub -h localhost -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -p 1883 -t 'topic' -E -i probe
+      interval: 5s
+      timeout: 3s
+      retries: 6
+    
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+      mqtt:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    environment:
+      TZ: $SCHEDULER_TIMEZONE
+    volumes:
+      - ${PWD}/.env:/app/.env
+
+volumes:
+  db-data:
+  mqtt-data:
+  mqtt-config:
