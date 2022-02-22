@@ -32,14 +32,12 @@
       <!-- Sidebar -->
       <div class="d-flex flex-column flex-shrink-0 p-3 bg-light" style="width: 20%;">
         <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
-          <svg class="bi me-2" width="40" height="32">
-            <use xlink:href="#title" />
-          </svg>
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="" height="32px" width="40px" />
           <span class="fs-4">WoodCam Records Manager</span>
         </a>
         <hr>
         <ul class="nav nav-pills flex-column mb-auto">
-    
+
           <!-- Stations list -->
           {% if g.user %}
           {{macros.build_site_navigation(pages=pages, selected="Page Name")}}
@@ -47,7 +45,8 @@
 
           <!-- Other sidebar items -->
           <li class="nav-item">
-            <a href="{{ url_for('station.index') }}" class="nav-link link-dark {% if selected == 'dashboard' %}active{% endif %}" aria-current="page">
+            <a href="{{ url_for('station.index') }}"
+              class="nav-link link-dark {% if selected == 'dashboard' %}active{% endif %}" aria-current="page">
               <span class="iconify" data-icon="mdi:view-dashboard-outline"></span>
               Dashboard
             </a>
@@ -59,7 +58,8 @@
             </a>
           </li>
           <li>
-            <a href="{{ url_for('station.add') }}" class="nav-link link-dark {% if selected == 'addstation' %}active{% endif %}">
+            <a href="{{ url_for('station.add') }}"
+              class="nav-link link-dark {% if selected == 'addstation' %}active{% endif %}">
               <span class="iconify" data-icon="mdi:card-plus-outline"></span>
               Add a station
             </a>

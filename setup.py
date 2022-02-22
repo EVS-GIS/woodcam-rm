@@ -14,7 +14,6 @@ setup(
         'requests',
         'python-dotenv',
         'pysnmp',
-        'psycopg2-binary',
-        'opencv-python'
+        'psycopg2-binary'
     ],
 )

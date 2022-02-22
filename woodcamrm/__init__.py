@@ -1,11 +1,11 @@
 import os
 from dotenv import dotenv_values
 
-from flask import Flask
+from flask import Flask, request
 from woodcamrm.extensions import mqtt, dbsql, scheduler
 from sqlalchemy import exc
 
-from woodcamrm.db import Stations
+from woodcamrm.db import Stations, SetupMode
 
 
 def create_app(test_config=None):
@@ -14,7 +14,7 @@ def create_app(test_config=None):
     app.config.from_mapping(dotenv_values())
     app.config['MQTT_BROKER_PORT'] = int(app.config['MQTT_BROKER_PORT'])
     app.config['MQTT_TLS_ENABLED'] = False
-    
+
     if test_config is None:
         # load the instance config, if it exists, when not testing
         app.config.from_pyfile("config.py", silent=True)
@@ -34,7 +34,7 @@ def create_app(test_config=None):
     dbsql.init_app(app)
     db.init_app(app)
 
-    with app.app_context(): 
+    with app.app_context():
         try:
             stations = Stations.query.all()
         except exc.ProgrammingError:
@@ -43,37 +43,38 @@ def create_app(test_config=None):
 
     # APScheluder for CRON jobs
     scheduler.api_enabled = False
-    scheduler.init_app(app)
-
+    scheduler.init_app(app)   
+        
     with app.app_context():
-        from . import jobs 
+        from . import jobs
         app.register_blueprint(jobs.bp)
 
         scheduler.start()
-        
+
     # MQTT client
     from . import mqtt_client
     if stations:
         mqtt.init_app(app)
-        
+
     @mqtt.on_connect()
     def handle_connect(client, userdata, flags, rc):
         with app.app_context():
-            stations = Stations.query.all()
+            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt)
             if stations:
                 mqtt_client.subscribe_topics(stations)
-                    
+
     @mqtt.on_message()
     def handle_mqtt_message(client, userdata, message):
         with app.app_context():
-            stations = Stations.query.all()
+            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt)
             mqtt_data = mqtt_client.to_dict(stations, message)
-            
-            setattr(mqtt_data['station'], mqtt_data['topic'], mqtt_data['data'])
+
+            setattr(mqtt_data['station'],
+                    mqtt_data['topic'], mqtt_data['data'])
             dbsql.session.commit()
-            
 
     # List all stations for sidebar
+
     @app.context_processor
     def inject_pages():
         return dict(pages=stations)

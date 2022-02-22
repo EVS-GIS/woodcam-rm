@@ -1,5 +1,4 @@
 import enum
-from gc import is_finalized
 import click
 
 from flask import current_app
@@ -29,6 +28,12 @@ class RecordMode(enum.Enum):
     low = "Low flow"
     no = "Not recording"
     
+
+class SetupMode(enum.Enum):
+    monitoring = "Monitoring only" 
+    mqtt = "MQTT messages"
+    rtsp = "RTSP stream"
+    
     
 class Users(dbsql.Model):
     id = dbsql.Column(dbsql.Integer, primary_key=True)
@@ -46,6 +51,7 @@ class Stations(dbsql.Model):
     id = dbsql.Column(dbsql.Integer, primary_key=True)
     common_name = dbsql.Column(dbsql.String(120), unique=True, nullable=False)
     created = dbsql.Column(dbsql.DateTime, nullable=False, default=func.now())
+    setup_mode = dbsql.Column(dbsql.Enum(SetupMode), nullable=False, default="monitoring")
     api_name = dbsql.Column(dbsql.String(120))
     monthly_data = dbsql.Column(dbsql.Integer)
     current_data = dbsql.Column(dbsql.Numeric)
@@ -136,13 +142,27 @@ def init_db():
     dbsql.session.add(check_data_plan)
     
     if current_app.config['DEBUG']:
-        station_bureau = Stations(common_name='Bureau',
-                                  api_name='V2942010',
-                                  monthly_data=10000,
-                                  reset_day=4,
-                                  ip='10.8.0.2',
-                                  mqtt_prefix='camera/bureau')
-        dbsql.session.add(station_bureau)
+        test_mqtt = Stations(common_name='Bureau MQTT',
+                            api_name='V2942010',
+                            setup_mode='mqtt',
+                            monthly_data=10000,
+                            reset_day=4,
+                            ip='10.8.0.2',
+                            mqtt_prefix='camera/bureau')
+        test_rtsp = Stations(common_name='Chazey RTSP',
+                            api_name='V2942010',
+                            setup_mode='rtsp',
+                            ip='193.252.53.58') 
+        test_monitoring = Stations(common_name='Bureau monitoring',
+                            api_name='V2942010',
+                            setup_mode='monitoring',
+                            monthly_data=10000,
+                            reset_day=4,
+                            ip='10.8.0.2',
+                            mqtt_prefix='camera/bureau')               
+        dbsql.session.add(test_mqtt)
+        dbsql.session.add(test_rtsp)
+        dbsql.session.add(test_monitoring)
         
     dbsql.session.commit()
 
