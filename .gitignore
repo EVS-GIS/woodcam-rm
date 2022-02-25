@@ -130,3 +130,7 @@ dmypy.json
 
 # VSCode settings
 .vscode/
+
+# Mosquitto certs
+mosquitto/certs/*.pem
+mosquitto/certs/*.key
