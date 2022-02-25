@@ -3,16 +3,16 @@ import functools
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
 )
-from werkzeug.security import check_password_hash, generate_password_hash
 
+from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import exc
 
 from woodcamrm.db import Users
 from woodcamrm.extensions import dbsql
 
 bp = Blueprint('auth', __name__, url_prefix='/auth')
-
-
+    
+    
 def login_required(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):

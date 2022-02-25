@@ -49,7 +49,9 @@
                         <tr>
                           <th scope="row">IP</th>
                           <td>{{ st.ip }}</td>
-                          <td>reachable/unreachable</td>
+                          <td>{% if st.ping_alert %}<span class="iconify" data-icon="noto:red-circle"></span> unreachable
+                            {% else %}<span class="iconify" data-icon="noto:green-circle"></span> reachable
+                            {% endif %}</td>
                         </tr>
                         <tr>
                           <th scope="row">Current water level</th>

@@ -59,8 +59,13 @@ class Stations(dbsql.Model):
     reset_day = dbsql.Column(dbsql.Integer)
     phone_number = dbsql.Column(dbsql.String(120))
     ip = dbsql.Column(dbsql.String(120))
+    camera_port = dbsql.Column(dbsql.Integer)
+    installation_port = dbsql.Column(dbsql.Integer)
     mqtt_prefix = dbsql.Column(dbsql.String(120))
+    snmp_received = dbsql.Column(dbsql.String(120))
+    snmp_transmitted = dbsql.Column(dbsql.String(120))
     last_ping = dbsql.Column(dbsql.DateTime)
+    ping_alert = dbsql.Column(dbsql.Boolean, nullable=False, default=False)
     last_hydro_time = dbsql.Column(dbsql.DateTime)
     last_hydro = dbsql.Column(dbsql.Numeric)
     current_recording = dbsql.Column(dbsql.Enum(RecordMode), default="no")
@@ -120,7 +125,7 @@ def init_db():
                         notify=True)
     alive_check = Jobs(job_name = 'alive_check',
                        full_name = 'Alive check',
-                       description = 'Check if all jobs and cameras are running correctly and send mail notifications if needed.')
+                       description = 'Check if all cameras are reachable and send mail notifications if not. Run data recovery after a service interruption.')
     hydrodata_update = Jobs(job_name = 'hydrodata_update',
                        full_name = 'Update hydro metrics',
                        description = 'Update hydro metrics with external API and trigger recording if needed.')    
@@ -135,7 +140,7 @@ def init_db():
                        description = 'Estimate 4G data plan usage.')
     
     dbsql.session.add(default_user)
-    # dbsql.session.add(alive_check)
+    dbsql.session.add(alive_check)
     dbsql.session.add(hydrodata_update)
     dbsql.session.add(records_check)
     dbsql.session.add(download_records)

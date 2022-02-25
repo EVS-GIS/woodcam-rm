@@ -1,10 +1,12 @@
 import os
+
 from dotenv import dotenv_values
 
-from flask import Flask, request
-from woodcamrm.extensions import mqtt, dbsql, scheduler
+from flask import Flask
+
 from sqlalchemy import exc
 
+from woodcamrm.extensions import mqtt, dbsql, scheduler, mail, login_manager
 from woodcamrm.db import Stations, SetupMode
 
 
@@ -13,7 +15,12 @@ def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(dotenv_values())
     app.config['MQTT_BROKER_PORT'] = int(app.config['MQTT_BROKER_PORT'])
-    app.config['MQTT_TLS_ENABLED'] = False
+    
+    for key in app.config.keys():
+        if str(app.config[key]).lower() == "true":
+            app.config[key] = True
+        elif str(app.config[key]).lower() == "false":
+            app.config[key] = False
 
     if test_config is None:
         # load the instance config, if it exists, when not testing
@@ -40,7 +47,10 @@ def create_app(test_config=None):
         except exc.ProgrammingError:
             stations = []
             print('The database appears to be empty. Please run flask init-db first.')
-
+            
+    # Mailing system
+    mail.init_app(app)
+    
     # APScheluder for CRON jobs
     scheduler.api_enabled = False
     scheduler.init_app(app)   
@@ -59,19 +69,23 @@ def create_app(test_config=None):
     @mqtt.on_connect()
     def handle_connect(client, userdata, flags, rc):
         with app.app_context():
-            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt)
+            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt).all()
             if stations:
                 mqtt_client.subscribe_topics(stations)
 
     @mqtt.on_message()
     def handle_mqtt_message(client, userdata, message):
         with app.app_context():
-            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt)
+            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt).all()
             mqtt_data = mqtt_client.to_dict(stations, message)
 
             setattr(mqtt_data['station'],
                     mqtt_data['topic'], mqtt_data['data'])
+                
             dbsql.session.commit()
+            
+            # Mail alerts
+            mqtt_client.alerts(stations)
 
     # List all stations for sidebar
 

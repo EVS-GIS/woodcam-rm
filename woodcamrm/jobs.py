@@ -1,15 +1,17 @@
+import subprocess
 import requests
 from datetime import datetime
 
 from flask import (
     Blueprint, redirect, url_for
 )
+from flask_mail import Message
 
 from pysnmp.hlapi import *
 
 from woodcamrm.auth import login_required
-from woodcamrm.extensions import scheduler, dbsql, mqtt
-from woodcamrm.db import Stations, Jobs
+from woodcamrm.extensions import scheduler, dbsql, mqtt, mail
+from woodcamrm.db import Stations, Jobs, Users
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -140,6 +142,16 @@ def check_data_plan():
                 # Convert total from bytes to Mb
                 total = total * 10**-6
                 
+                # Mail alert if data limit is soon reached
+                if st.monthly_data-total < st.monthly_data*0.05:
+                    msg = Message(f"[woodcam-rm] Alert on station {st.common_name}",
+                                  body=f"The data consumtion of station {st.common_name} reached {total} over the {st.monthly_data} available.")
+                    
+                    for user in Users.query.filter_by(notify=True).all():
+                        msg.add_recipient(user.email)
+                        
+                    mail.send(msg)
+                
                 # Update stations table on the database
                 st.current_data = total
                 st.last_data_check = datetime.now()
@@ -151,6 +163,58 @@ def check_data_plan():
         dbsql.session.commit()
         
 
+@scheduler.task(
+    "interval",
+    id="alive_check",
+    seconds=120,
+    max_instances=1,
+    start_date="2022-01-01 12:00:00",
+)
+def alive_check():
+    with scheduler.app.app_context():
+        stations = Stations.query.filter(Stations.ip != None).all()
+        jb = Jobs.query.filter_by(job_name='alive_check').first()
+        
+        for st in stations:
+            response = subprocess.call(["ping", "-c", "1", st.ip],
+                                       stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.STDOUT)
+           
+            if response == 0:              
+                if st.ping_alert:
+                    msg = Message(f"[woodcam-rm] Station {st.common_name} OK",
+                                    body=f"Station {st.common_name} unreachable from {st.last_ping} to {datetime.now()}.")
+                        
+                    for user in Users.query.filter_by(notify=True).all():
+                        msg.add_recipient(user.email) 
+                    
+                    mail.send(msg)
+                                           
+                    st.ping_alert = False
+                    st.last_ping = datetime.now()
+                
+                else:
+                    st.last_ping = datetime.now()
+                
+            elif not st.ping_alert:
+                msg = Message(f"[woodcam-rm] Alert on station {st.common_name}",
+                                  body=f"Station {st.common_name} unreachable since {st.last_ping}.")
+                    
+                for user in Users.query.filter_by(notify=True).all():
+                    msg.add_recipient(user.email)
+                    
+                mail.send(msg)
+                
+                st.ping_alert = True
+                
+            dbsql.session.commit()
+            
+        #Update the jobs table in the database
+        jb.last_execution = datetime.now()
+        jb.state = 'running'
+        dbsql.session.commit()
+                
+                
 ########################
 # Manual jobs operations
 ########################
@@ -255,40 +319,7 @@ def manual_resume(job):
 #         cur.close()
 
 
-# @scheduler.task(
-#     "interval",
-#     id="alive_check",
-#     seconds=10,
-#     max_instances=1,
-#     start_date="2022-01-01 12:00:00",
-# )
-# def alive_check():
-#     with scheduler.app.app_context():
-#         stations = Stations.query.all()
-        
-#         for st in stations:
-#             if st.mqtt_prefix:
-#                 topics = {'connection': {'path': st.mqtt_prefix+"/event/connection", 'data': None},
-#                           'daymode': {'path': st.mqtt_prefix+"/event/tns:onvif/VideoSource/tns:axis/DayNightVision/$source/VideoSourceConfigurationToken/1", 'data': None},
-#                           'temperature': {'path': st.mqtt_prefix+"/event/tns:onvif/Device/tns:axis/Status/Temperature/Above_or_below", 'data': None},
-#                           'sd_alert': {'path': st.mqtt_prefix+"/event/tns:axis/Storage/Alert/$source/disk_id/SD_DISK", 'data': None},
-#                           'sd_disruption': {'path': st.mqtt_prefix+"/event/tns:axis/Storage/Disruption/$source/disk_id/SD_DISK", 'data': None},
-#                           'tampering': {'path': st.mqtt_prefix+"/event/tns:onvif/VideoSource/tns:axis/Tampering/$source/channel/1", 'data': None}
-#                           }
 
-#                 for topic in topics.keys():
-#                     continue
-#                     topics[topic]['data'] = subscribe.simple(
-#                         topics[topic]['path'], 
-#                         hostname=scheduler.app.config["MQTT_BROKER_URL"],
-#                         auth={"username": scheduler.app.config["MQTT_USERNAME"], "password": scheduler.app.config["MQTT_PASSWORD"]},
-#                         port=int(scheduler.app.config["MQTT_BROKER_PORT"]),
-#                         qos=0,
-#                     ).payload
+               
                     
-#         cur.execute(
-#             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP, state = 'running'  WHERE job_name = 'alive_check';"
-#         )
-#         db.commit()
-#         cur.close()
         

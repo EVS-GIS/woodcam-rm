@@ -3,6 +3,7 @@ from datetime import datetime
 from flask import (
     Blueprint, flash, g, Response, redirect, render_template, request, url_for
 )
+
 from werkzeug.exceptions import abort
 from sqlalchemy import exc
 
