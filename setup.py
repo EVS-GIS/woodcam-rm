@@ -11,6 +11,7 @@ setup(
         'flask-sqlalchemy',
         'flask-apscheduler',
         'flask-mqtt',
+        'flask-mail',
         'requests',
         'python-dotenv',
         'pysnmp',

@@ -6,7 +6,7 @@ from flask import Flask
 
 from sqlalchemy import exc
 
-from woodcamrm.extensions import mqtt, dbsql, scheduler, mail, login_manager
+from woodcamrm.extensions import mqtt, dbsql, scheduler, mail
 from woodcamrm.db import Stations, SetupMode
 
 
@@ -47,7 +47,7 @@ def create_app(test_config=None):
         except exc.ProgrammingError:
             stations = []
             print('The database appears to be empty. Please run flask init-db first.')
-            
+    
     # Mailing system
     mail.init_app(app)
     
