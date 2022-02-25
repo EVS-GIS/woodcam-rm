@@ -153,18 +153,24 @@ def init_db():
                             monthly_data=10000,
                             reset_day=4,
                             ip='10.8.0.2',
-                            mqtt_prefix='camera/bureau')
+                            mqtt_prefix='camera/bureau',
+                            camera_port=8080,
+                            installation_port=80)
         test_rtsp = Stations(common_name='Chazey RTSP',
                             api_name='V2942010',
                             setup_mode='rtsp',
-                            ip='193.252.53.58') 
+                            ip='193.252.53.58',
+                            camera_port=57091,
+                            installation_port=10000) 
         test_monitoring = Stations(common_name='Bureau monitoring',
                             api_name='V2942010',
                             setup_mode='monitoring',
                             monthly_data=10000,
                             reset_day=4,
                             ip='10.8.0.2',
-                            mqtt_prefix='camera/bureau')               
+                            mqtt_prefix='camera/bureau',
+                            camera_port=8080,
+                            installation_port=80)               
         dbsql.session.add(test_mqtt)
         dbsql.session.add(test_rtsp)
         dbsql.session.add(test_monitoring)

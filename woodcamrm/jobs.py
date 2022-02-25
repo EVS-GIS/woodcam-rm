@@ -1,4 +1,4 @@
-import subprocess
+import socket
 import requests
 from datetime import datetime
 
@@ -176,11 +176,20 @@ def alive_check():
         jb = Jobs.query.filter_by(job_name='alive_check').first()
         
         for st in stations:
-            response = subprocess.call(["ping", "-c", "1", st.ip],
-                                       stdout=subprocess.DEVNULL,
-                                       stderr=subprocess.STDOUT)
-           
-            if response == 0:              
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            
+            # First, try to ping camera
+            try:
+                if not st.camera_port:
+                    st.camera_port = 80
+                    
+                s.connect((st.ip, int(st.camera_port)))
+                s.shutdown(2)
+                response = True
+            except:
+                response = False
+            
+            if response:              
                 if st.ping_alert:
                     msg = Message(f"[woodcam-rm] Station {st.common_name} OK",
                                     body=f"Station {st.common_name} unreachable from {st.last_ping} to {datetime.now()}.")
@@ -197,17 +206,40 @@ def alive_check():
                     st.last_ping = datetime.now()
                 
             elif not st.ping_alert:
-                msg = Message(f"[woodcam-rm] Alert on station {st.common_name}",
-                                  body=f"Station {st.common_name} unreachable since {st.last_ping}.")
+                # If camera does not respond, try to ping installation
+                try:
+                    if not st.installation_port:
+                        st.installation_port = 80
+                        
+                    s.connect((st.ip, int(st.installation_port)))
+                    s.shutdown(2)
+                    reponse_install = True
+                except:
+                    reponse_install = False
                     
-                for user in Users.query.filter_by(notify=True).all():
-                    msg.add_recipient(user.email)
+                if not reponse_install:
+                    msg = Message(f"[woodcam-rm] Alert on station {st.common_name}",
+                                    body=f"Station {st.common_name}: full installation unreachable since {st.last_ping}.")
+                        
+                    for user in Users.query.filter_by(notify=True).all():
+                        msg.add_recipient(user.email)
+                        
+                    mail.send(msg)
                     
-                mail.send(msg)
+                    st.ping_alert = True
                 
-                st.ping_alert = True
+                else:
+                    msg = Message(f"[woodcam-rm] Alert on station {st.common_name}",
+                                    body=f"!Critical alert! Station {st.common_name}: camera unreachable since {st.last_ping}. Installation steel reachable.")
+                        
+                    for user in Users.query.filter_by(notify=True).all():
+                        msg.add_recipient(user.email)
+                        
+                    mail.send(msg)
+                    
+                    st.ping_alert = True
                 
-            dbsql.session.commit()
+            dbsql.session.commit()         
             
         #Update the jobs table in the database
         jb.last_execution = datetime.now()

@@ -80,6 +80,29 @@ def login():
     return render_template('auth/login.html')
 
 
+@bp.route('/settings', methods=('GET', 'POST'))
+@login_required
+def settings():
+    fields = {
+        'password': {'type': "password", 'required': False, 'friendly_name': 'Password', 'value': None},
+        'email': {'type': "email", 'required': False, 'friendly_name': 'Email', 'value': None},
+        'notify': {'type': "checkbox", 'required': False, 'friendly_name': 'Receive mail notifications', 'value': None},
+    }
+    
+    if request.method == 'GET':
+        for fd in fields.keys():
+            if fd != "password":
+                fields[fd]['value'] = getattr(g.user, fd)
+    
+    if request.method == 'POST':
+        
+        error = None
+        if error is None:
+            return redirect(url_for('index'))
+        
+    return render_template('auth/settings.html', fields=fields)
+
+
 @bp.before_app_request
 def load_logged_in_user():
     user_id = session.get('user_id')

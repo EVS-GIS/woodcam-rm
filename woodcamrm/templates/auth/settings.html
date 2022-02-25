@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block title %}User settings{% endblock %}
+
+{% block content %}
+<div class="card text-center w-75 mx-auto">
+    <div class="card-header">
+        Modify user settings (not functional yet)
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% for fd in fields.keys() %}
+            <div class="mb-3 row">
+                <label for="{{ fd }}" class="col-sm-2 col-form-label">{{fields[fd]['friendly_name']}}</label>
+                <div class="col-sm-10">
+                    <input type="{{ fields[fd]['type'] }}" name="{{ fd }}" 
+                            class="{% if fields[fd]['type']=='checkbox' %}form-check-input{% else %}form-control{% endif %}" id="{{ fd }}"
+                            value="{% if fields[fd]['type']!='password' %}{{ request.form[fd] or g.user[fd] }}{%endif%}"
+                            {% if fields[fd]['required'] %}required{% endif %}>
+                </div>
+            </div>
+            {% endfor %}
+            <input type="submit" class="btn btn-primary" value="Submit">
+        </form>
+    </div>
+</div>
+{% endblock %}
