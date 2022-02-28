@@ -21,13 +21,16 @@ services:
       RTSP_PROTOCOLS: "tcp"
   
   mqtt:
-    image: eclipse-mosquitto:2.0.11-openssl
+    build: 
+      context: ./mosquitto
+      args:
+        mqtt_username: ${MQTT_USERNAME}
+        mqtt_password: ${MQTT_PASSWORD}
     ports:
       - '1883:1883'
-      - '8883:8883'
+      - '8883:1883'
     volumes:
       - mqtt-data:/mosquitto/data
-      - mqtt-config:/mosquitto/config
     healthcheck:
       test: timeout 1 mosquitto_sub -h localhost -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -p 1883 -t 'topic' -E -i probe
       interval: 5s
@@ -42,7 +45,7 @@ services:
       mqtt:
         condition: service_healthy
     ports:
-      - "5000:5000"
+      - "8000:5000"
     environment:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
@@ -51,4 +54,3 @@ services:
 volumes:
   db-data:
   mqtt-data:
-  mqtt-config:

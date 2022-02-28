@@ -83,16 +83,14 @@ sudo systemctl start woodcamrm.service
 
 - Copy the example .env file and make the required configuration changes (database, etc...)
 - Install docker-compose (https://docs.docker.com/compose/install/)
+- Place your mosquitto passwordfile in the mosquitto folder if you have one. If not, a passwordfile will be created with the password in the .env file.
 
 ```bash
 # Create containers and persistent volumes
 docker-compose up --no-start
 
-# Copy MQTT broker configuration
-docker run --rm -v $PWD:/source -v woodcam-rm_mqtt-config:/dest -w /source eclipse-mosquitto:2.0.11-openssl cp -f mosquitto/* /dest
-
-# Add MQTT user
-docker run -it --rm -v woodcam-rm_mqtt-config:/mosquitto/config eclipse-mosquitto:2.0.11-openssl mosquitto_passwd -b /mosquitto/config/passwordfile <user> <password>
+# Add MQTT user after build
+docker run -it --rm -v woodcam-rm_mqtt-config:/mosquitto/config eclipse-mosquitto:2.0.11 mosquitto_passwd -b /mosquitto/config/passwordfile <user> <password>
 
 # Run containers
 docker-compose up -d
