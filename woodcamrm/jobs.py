@@ -177,6 +177,7 @@ def alive_check():
         
         for st in stations:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(10)
             
             # First, try to ping camera
             try:

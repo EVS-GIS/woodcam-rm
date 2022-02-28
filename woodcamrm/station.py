@@ -121,7 +121,7 @@ def stream(id):
     #     bytearray(encodedImage) + b'\r\n'
 
     # return Response(frame, mimetype="multipart/x-mixed-replace; boundary=frame")
-    return True
+    return "not available"
 
 
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))
