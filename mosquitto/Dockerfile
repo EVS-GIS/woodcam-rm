@@ -12,6 +12,7 @@ RUN if [ -f /mosquitto/config/passwordfile ]; \
     fi
 
 EXPOSE 1883
+EXPOSE 8883
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]

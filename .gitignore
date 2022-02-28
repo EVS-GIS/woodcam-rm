@@ -131,5 +131,6 @@ dmypy.json
 # VSCode settings
 .vscode/
 
-# Mosquitto passwordfile
+# Mosquitto passwordfile and certs
 mosquitto/passwordfile
+mosquitto/certs/*.pem

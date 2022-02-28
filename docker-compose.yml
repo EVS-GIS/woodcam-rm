@@ -2,6 +2,7 @@ version: "3.9"
 services:
   db:
     image: postgres:13.5-alpine
+    restart: always
     environment:
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_USER: $POSTGRES_USER
@@ -26,23 +27,17 @@ services:
       args:
         mqtt_username: ${MQTT_USERNAME}
         mqtt_password: ${MQTT_PASSWORD}
+    restart: always
     ports:
-      - '1883:1883'
-      - '8883:1883'
+      - '8883:8883'
     volumes:
       - mqtt-data:/mosquitto/data
-    healthcheck:
-      test: timeout 1 mosquitto_sub -h localhost -u ${MQTT_USERNAME} -P ${MQTT_PASSWORD} -p 1883 -t 'topic' -E -i probe
-      interval: 5s
-      timeout: 3s
-      retries: 6
     
   app:
     build: .
+    restart: always
     depends_on:
       db:
-        condition: service_healthy
-      mqtt:
         condition: service_healthy
     ports:
       - "8000:5000"
