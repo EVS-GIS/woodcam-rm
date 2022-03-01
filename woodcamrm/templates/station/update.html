@@ -8,24 +8,19 @@
         Edit station {{ station['common_name'] }}
     </div>
     <div class="card-body">
-        <form method="post">
-            {% for fd in fields.keys() %}
+        <form method="POST">
+            {% for field in form %}
             <div class="mb-3 row">
-                <label for="{{ fd }}" class="col-sm-2 col-form-label">{{fields[fd]['friendly_name']}}</label>
-                <div class="col-sm-10">
-                    <input type="{{ fields[fd]['type'] }}" name="{{ fd }}" class="form-control" id="{{ fd }}"
-                        value="{{ request.form[fd] or station[fd] }}"
-                        {% if fd == 'ip' %}pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$"{% endif %}
-                        {% if fields[fd]['required'] %}required{% endif %}>
-                </div>
+                {{ field.label }} {{ field }}
             </div>
             {% endfor %}
-             <input type="submit" class="btn btn-primary" value="Update">
+            <input type="submit" class="btn btn-primary" value="Submit changes">
         </form>
     </div>
     <div class="card-footer">
         <form action="{{ url_for('station.delete', id=station['id']) }}" method="post">
-            <input class="btn btn-danger" type="submit" value="Delete station" onclick="return confirm('Are you sure? This action is irreversible');">
+            <input class="btn btn-danger" type="submit" value="Delete station"
+                onclick="return confirm('Are you sure? This action is irreversible');">
         </form>
     </div>
 </div>

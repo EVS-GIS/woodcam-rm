@@ -1,4 +1,5 @@
 import os
+from sqlite3 import ProgrammingError
 
 from dotenv import dotenv_values
 
@@ -8,6 +9,7 @@ from sqlalchemy import exc
 
 from woodcamrm.extensions import mqtt, dbsql, scheduler, mail
 from woodcamrm.db import Stations, SetupMode
+from woodcamrm.rtsp import update_rtsp_proxies
 
 
 def create_app(test_config=None):
@@ -46,7 +48,7 @@ def create_app(test_config=None):
             stations = Stations.query.all()
         except exc.ProgrammingError:
             stations = []
-            print('The database appears to be empty. Please run flask init-db first.')
+            print('The database needs to be updated. Please run flask init-db first.')
     
     # Mailing system
     mail.init_app(app)
@@ -92,7 +94,16 @@ def create_app(test_config=None):
     @app.context_processor
     def inject_pages():
         return dict(pages=stations)
-
+    
+    # Check RTSP configs
+    with app.app_context():
+        try:
+            stations_rtsp = Stations.query.filter_by(setup_mode=SetupMode.rtsp).all()
+            if stations_rtsp:
+                update_rtsp_proxies(stations_rtsp, app.config['RTSP_SERVER_URL'], app.config['RTSP_SERVER_API_PORT'])
+        except exc.ProgrammingError:
+            pass
+        
     from . import auth
 
     app.register_blueprint(auth.bp)

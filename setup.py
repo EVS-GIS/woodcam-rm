@@ -12,9 +12,11 @@ setup(
         'flask-apscheduler',
         'flask-mqtt',
         'flask-mail',
+        'flask-wtf',
         'requests',
         'python-dotenv',
         'pysnmp',
-        'psycopg2-binary'
+        'geoalchemy2',
+        'suntime'
     ],
 )
