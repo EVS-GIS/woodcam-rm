@@ -17,6 +17,8 @@ setup(
         'python-dotenv',
         'pysnmp',
         'geoalchemy2',
-        'suntime'
+        'suntime',
+        'celery[redis]',
+        'opencv-python'
     ],
 )

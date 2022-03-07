@@ -8,18 +8,13 @@
         Register a new station
     </div>
     <div class="card-body">
-        <form method="post">
-            {% for fd in fields.keys() %}
+        <form method="POST">
+            {% for field in form %}
             <div class="mb-3 row">
-                <label for="{{ fd }}" class="col-sm-2 col-form-label">{{fields[fd]['friendly_name']}}</label>
-                <div class="col-sm-10">
-                    <input type="{{ fields[fd]['type'] }}" name="{{ fd }}" class="form-control" id="{{ fd }}"
-                        {% if fd == 'ip' %}pattern="^((\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.){3}(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$"{% endif %}
-                        {% if fields[fd]['required'] %}required{% endif %}>
-                </div>
+                {{ field.label }} {{ field }}
             </div>
             {% endfor %}
-            <input type="submit" class="btn btn-primary" value="Submit">
+            <input type="submit" class="btn btn-primary" value="Submit changes">
         </form>
     </div>
 </div>

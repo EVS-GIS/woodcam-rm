@@ -58,7 +58,7 @@ services:
       - ${PWD}/.env:/app/.env
 
   worker:
-    build: .
+    image: woodcam-rm_app:latest
     restart: always
     command: celery worker -B -l info -A 
     depends_on:

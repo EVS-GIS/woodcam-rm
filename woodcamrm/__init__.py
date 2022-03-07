@@ -7,9 +7,16 @@ from flask import Flask
 
 from sqlalchemy import exc
 
+from celery import Celery
+
 from woodcamrm.extensions import mqtt, dbsql, scheduler, mail
 from woodcamrm.db import Stations, SetupMode
 from woodcamrm.rtsp import update_rtsp_proxies
+
+
+celery = Celery(__name__, 
+                backend=dotenv_values()["CELERY_RESULT_BACKEND"],
+                broker=dotenv_values()["CELERY_BROKER_URL"])
 
 
 def create_app(test_config=None):
@@ -53,15 +60,16 @@ def create_app(test_config=None):
     # Mailing system
     mail.init_app(app)
     
-    # APScheluder for CRON jobs
+    # APScheluder and Celery for CRON jobs
     scheduler.api_enabled = False
     scheduler.init_app(app)   
         
     with app.app_context():
         from . import jobs
         app.register_blueprint(jobs.bp)
-
         scheduler.start()
+        
+        celery.conf.update(app.config)
 
     # MQTT client
     from . import mqtt_client

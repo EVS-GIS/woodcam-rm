@@ -29,8 +29,8 @@ class StationForm(FlaskForm):
     ip = StringField('Installation IP', validators=[Optional(), IPAddress()]) 
     setup_mode = SelectField('Setup mode', validators=[DataRequired()], choices=[
         (SetupMode.monitoring.name, "Monitoring"),
-        (SetupMode.mqtt.name, "MQTT"),
-        (SetupMode.rtsp.name, "RTSP")])
+        (SetupMode.mqtt.name, "MQTT messaging"),
+        (SetupMode.rtsp.name, "RTSP relay")])
     mqtt_prefix = StringField('MQTT prefix (if MQTT setup)', validators=[Optional()])
     camera_port = IntegerField('Camera ping port', validators=[Optional()])
     installation_port = IntegerField('Installation ping port', validators=[Optional()])
@@ -83,44 +83,6 @@ def add():
         return redirect(url_for('station.station', id=id))
         
     return render_template('station/add.html', station=station, selected='addstation', form=form)
-
-
-# @bp.route('/add', methods=('GET', 'POST'))
-# @login_required
-# def add():
-#     fields = station_fields
-
-#     if request.method == 'POST':
-#         for fd in fields.keys():
-#             fields[fd]['value'] = request.form[fd]
-
-#         error = None
-
-#         if not fields['common_name']['value']:
-#             error = 'A station name is required.'
-
-#         if error is not None:
-#             flash(error)
-#         else:
-#             new_station = Stations()
-#             for fd in fields.keys():
-#                 if fields[fd]['value']:
-#                     setattr(new_station, fd, fields[fd]['value'])
-
-#             try:
-#                 dbsql.session.add(new_station)
-#                 dbsql.session.commit()
-
-#             except exc.IntegrityError:
-#                 error = f"Station {fields['common_name']['value']} is already registered."
-#             else:
-#                 scheduler.get_job(id="hydrodata_update").modify(
-#                     next_run_time=datetime.now())
-#                 scheduler.get_job(id="check_data_plan").modify(
-#                     next_run_time=datetime.now())
-#                 return redirect(url_for('station.index'))
-
-#     return render_template('station/add.html', selected='addstation', fields=fields)
 
 
 def get_station(id):
