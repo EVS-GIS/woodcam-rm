@@ -5,6 +5,7 @@ from flask import current_app
 from flask.cli import with_appcontext
 
 from sqlalchemy.sql import func
+from geoalchemy2.types import Geometry
 
 from werkzeug.security import generate_password_hash
 
@@ -51,6 +52,8 @@ class Stations(dbsql.Model):
     id = dbsql.Column(dbsql.Integer, primary_key=True)
     common_name = dbsql.Column(dbsql.String(120), unique=True, nullable=False)
     created = dbsql.Column(dbsql.DateTime, nullable=False, default=func.now())
+    long = dbsql.Column(dbsql.Numeric)
+    lat = dbsql.Column(dbsql.Numeric)
     setup_mode = dbsql.Column(dbsql.Enum(SetupMode), nullable=False, default="monitoring")
     api_name = dbsql.Column(dbsql.String(120))
     monthly_data = dbsql.Column(dbsql.Integer)
@@ -75,6 +78,7 @@ class Stations(dbsql.Model):
     sd_alert = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     sd_disruption = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     tampering = dbsql.Column(dbsql.Integer, nullable=False, default=0)
+    geom = dbsql.Column(Geometry(geometry_type='POINT', srid=4326))
     jan_threshold = dbsql.Column(dbsql.Numeric)
     feb_threshold = dbsql.Column(dbsql.Numeric)
     mar_threshold = dbsql.Column(dbsql.Numeric)
@@ -150,6 +154,8 @@ def init_db():
         test_mqtt = Stations(common_name='Bureau MQTT',
                             api_name='V2942010',
                             setup_mode='mqtt',
+                            long=4.83,
+                            lat=45.73,
                             monthly_data=10000,
                             reset_day=4,
                             ip='10.8.0.2',
@@ -159,12 +165,16 @@ def init_db():
         test_rtsp = Stations(common_name='Chazey RTSP',
                             api_name='V2942010',
                             setup_mode='rtsp',
+                            long=5.23,
+                            lat=45.91,
                             ip='193.252.53.58',
                             camera_port=57091,
                             installation_port=10000) 
         test_monitoring = Stations(common_name='Bureau monitoring',
                             api_name='V2942010',
                             setup_mode='monitoring',
+                            long=4.83,
+                            lat=45.73,
                             monthly_data=10000,
                             reset_day=4,
                             ip='10.8.0.2',

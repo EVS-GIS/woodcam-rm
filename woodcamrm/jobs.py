@@ -1,6 +1,8 @@
 import socket
 import requests
+
 from datetime import datetime
+from suntime import Sun
 
 from flask import (
     Blueprint, redirect, url_for
@@ -11,7 +13,8 @@ from pysnmp.hlapi import *
 
 from woodcamrm.auth import login_required
 from woodcamrm.extensions import scheduler, dbsql, mqtt, mail
-from woodcamrm.db import Stations, Jobs, Users
+from woodcamrm.db import SetupMode, Stations, Jobs, Users
+from woodcamrm.rtsp import update_rtsp_proxies
 
 bp = Blueprint('jobs', __name__, url_prefix='/jobs')
 
@@ -48,32 +51,36 @@ def hydrodata_update():
                 # Update current_recording mode and lasttime of recording mode change 
                 current_recording = 'no'
                 trigger_time = st.last_record_change
+                change = False
                 
                 # Check if a threshold is informed for the current month
-                if threshold:
-                    
+                if threshold:                 
                     # Check if threshold is triggered
                     if hydrodata['resultat_obs'] >= threshold:
                         # Check if the recording mode is not already "high_flow"
                         if st.current_recording.name != "high":
+                            change = True
                             # Update recording mode change time
                             trigger_time = datetime.now()
                             
                         current_recording = 'high'
                         
                         # Push the recording mode to the MQTT broker
-                        mqtt.publish(f"{st.mqtt_prefix}/flow_trigger", "On", qos=1, retain=True)
+                        if st.setup_mode == SetupMode.mqtt:
+                            mqtt.publish(f"{st.mqtt_prefix}/flow_trigger", "On", qos=1, retain=True)
                         
                     else:
                         # Check if the recording mode is not already "low_flow"
                         if st.current_recording.name != "low":
+                            change = True
                             # Update recording mode change time
                             trigger_time = datetime.now()
                             
                         current_recording = 'low'
                         
                         # Push the recording mode to the MQTT broker
-                        mqtt.publish(f"{st.mqtt_prefix}/flow_trigger", "Off", qos=1, retain=True)
+                        if st.setup_mode == SetupMode.mqtt:
+                            mqtt.publish(f"{st.mqtt_prefix}/flow_trigger", "Off", qos=1, retain=True)
 
                 # Update the stations table in the database
                 st.last_hydro_time = datetime.strptime(hydrodata['date_obs'], "%Y-%m-%dT%H:%M:%SZ")
@@ -82,7 +89,10 @@ def hydrodata_update():
                 st.last_record_change = trigger_time
                 dbsql.session.commit()
                 
-                    
+                # Update the RTSP proxy
+                if st.setup_mode == SetupMode.rtsp and change:
+                    update_rtsp_proxies(st, scheduler.app.config["RTSP_SERVER_URL"], scheduler.app.config["RTSP_SERVER_API_PORT"])
+                
         #Update the jobs table in the database
         jb = Jobs.query.filter_by(job_name='hydrodata_update').first()
         jb.last_execution = datetime.now()
@@ -106,11 +116,11 @@ def check_data_plan():
 
         for st in stations:
             # Check if station IP is informed
-            if st.ip:
+            if st.ip and (st.snmp_received or st.snmp_transmitted):
                 total = 0
                 
                 # Loop over the two OIDs (transmitted and received)
-                for oid in [scheduler.app.config["OID_DATA_RECEIVED"], scheduler.app.config["OID_DATA_TRANSMITTED"]]:
+                for oid in [st.snmp_received, st.snmp_transmitted]:
                     # Retrieve value from SNMP agent
                     iterator = getCmd(
                         SnmpEngine(),
@@ -239,6 +249,20 @@ def alive_check():
                     mail.send(msg)
                     
                     st.ping_alert = True
+                    
+            # If all ping are ok, update daymode if station is not MQTT enabled
+            if not st.ping_alert and st.setup_mode != SetupMode.mqtt and st.long and st.lat:
+                
+                sun = Sun(lat=float(st.lat), lon=float(st.long))
+                sunrise = sun.get_local_sunrise_time()
+                sunset = sun.get_local_sunset_time()
+            
+                now = datetime.now(sunrise.tzinfo)
+                
+                if now < sunrise or now > sunset:
+                    st.current_daymode = 0
+                else:
+                    st.current_daymode = 1
                 
             dbsql.session.commit()         
             
@@ -248,6 +272,21 @@ def alive_check():
         dbsql.session.commit()
                 
                 
+@scheduler.task(
+    "interval",
+    id="records_check",
+    seconds=12*3600,
+    max_instances=1,
+    start_date="2022-01-01 12:00:00",
+)
+def records_check():
+    with scheduler.app.app_context():
+        # RTSP stations
+        stations = Stations.query.filter_by(setup_mode = SetupMode.rtsp).all()
+        
+    
+        
+        
 ########################
 # Manual jobs operations
 ########################
@@ -284,72 +323,6 @@ def manual_resume(job):
     return redirect(url_for('station.index'))
 
 
-# @scheduler.task(
-#     "interval",
-#     id="records_check",
-#     seconds=60,
-#     max_instances=1,
-#     start_date="2022-01-01 12:00:00",
-# )
-# def records_check():
-#     with scheduler.app.app_context():
-#         db = get_db()
-#         cur = db.cursor(cursor_factory=RealDictCursor)
-#         cur.execute("SELECT * FROM stations;")
-#         stations = cur.fetchall()
-
-#         for st in stations:
-#             # ssh_client = paramiko.SSHClient()
-#             record_files = glob.glob(
-#                 os.path.join(st.records_path" "**/*"), recursive=True
-#             )
-
-#             if not record_files:
-#                 break
-
-#             cur.execute(f"SELECT * FROM records WHERE station_id = {st['.']};
-#             record_known = [rec["path"] for rec in cur.fetchall()]
-
-#             if record_known:
-#                 new_records = [r for r in record_files if r not in record_known]
-#                 deleted_records = [r for r in record_known if r not in record_files]
-#             else:
-#                 new_records = record_files
-#                 deleted_records = None
-
-#             for nr in new_records:
-#                 output = subprocess.check_output(
-#                     f"exiftool -d '%Y-%m-%d %H:%M:%S %Z' {nr}", shell=True
-#                 )
-#                 lines = output.decode("ascii").split("\n")
-#                 lines = [li for li in lines if li != ""]
-
-#                 keys = [li.split(" : ")[0].rstrip() for li in lines]
-#                 values = [li.split(" : ")[1] for li in lines]
-
-#                 meta = dict(zip(keys, values))
-
-#                 cur.execute(
-#                     f"INSERT INTO records (station_id, date_begin, date_end, size, path) VALUES \
-#                     ({st['.'] \
-#                     '{meta['Date/Time Original']}', \
-#                     '{meta['File Modification Date/Time']}', \
-#                     '{meta['File Size']}', \
-#                     '{nr}');"
-#                 )
-
-#             for dr in deleted_records:
-#                 cur.execute(
-#                     f"UPDATE records set deleted = True \
-#                     WHERE station_id = {st.id' AND path = {dr};"
-#                 )
-
-#         cur.execute(
-#             "UPDATE jobs SET last_execution = CURRENT_TIMESTAMP \
-#             WHERE job_name = 'records_check';"
-#         )
-#         db.commit()
-#         cur.close()
 
 
 
