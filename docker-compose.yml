@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   db:
-    image: postgres:13.5-alpine
+    image: postgis/postgis:13-3.2-alpine
     restart: always
     environment:
       POSTGRES_DB: $POSTGRES_DB
@@ -17,10 +17,15 @@ services:
 
   rtsp:
     image: aler9/rtsp-simple-server
+    restart: always
     environment:
       RTSP_API: "yes"
+      RTSP_APIADDRESS: "0.0.0.0:9997"
       RTSP_PROTOCOLS: "tcp"
-  
+    ports:
+      - '8554:8554'
+      - '9997:9997'
+
   mqtt:
     build: 
       context: ./mosquitto
@@ -29,6 +34,7 @@ services:
         mqtt_password: ${MQTT_PASSWORD}
     restart: always
     ports:
+      - '1883:1883'
       - '8883:8883'
     volumes:
       - mqtt-data:/mosquitto/data
