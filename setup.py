@@ -13,12 +13,13 @@ setup(
         'flask-mqtt',
         'flask-mail',
         'flask-wtf',
+        'psycopg2-binary',
         'requests',
         'python-dotenv',
         'pysnmp',
         'geoalchemy2',
         'suntime',
         'celery[redis]',
-        'opencv-python'
+        #'opencv-python'
     ],
 )

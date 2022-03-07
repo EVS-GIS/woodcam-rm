@@ -57,17 +57,17 @@ services:
     volumes:
       - ${PWD}/.env:/app/.env
 
-  worker:
-    image: woodcam-rm_app:latest
-    restart: always
-    command: celery -A woodcamrm.celery worker --loglevel=info
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      TZ: $SCHEDULER_TIMEZONE
-    volumes:
-      - ${PWD}/.env:/app/.env
+  # worker:
+  #   image: woodcam-rm_app:latest
+  #   restart: always
+  #   command: celery -A woodcamrm.celery worker --loglevel=info
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   environment:
+  #     TZ: $SCHEDULER_TIMEZONE
+  #   volumes:
+  #     - ${PWD}/.env:/app/.env
 
 volumes:
   db-data:
