@@ -60,7 +60,7 @@ services:
   worker:
     build: .
     restart: always
-    command: celery worker -B -l info -A 
+    command: celery -A woodcamrm.celery worker --loglevel=info
     depends_on:
       db:
         condition: service_healthy
