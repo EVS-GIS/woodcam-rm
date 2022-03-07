@@ -91,7 +91,7 @@ def hydrodata_update():
                 
                 # Update the RTSP proxy
                 if st.setup_mode == SetupMode.rtsp and change:
-                    update_rtsp_proxies(st, scheduler.app.config["RTSP_SERVER_URL"], scheduler.app.config["RTSP_SERVER_API_PORT"])
+                    update_rtsp_proxies([st], scheduler.app.config["RTSP_SERVER_URL"], scheduler.app.config["RTSP_SERVER_API_PORT"])
                 
         #Update the jobs table in the database
         jb = Jobs.query.filter_by(job_name='hydrodata_update').first()
@@ -259,12 +259,21 @@ def alive_check():
             
                 now = datetime.now(sunrise.tzinfo)
                 
+                change = False
                 if now < sunrise or now > sunset:
+                    if st.current_daymode == 1:
+                        change = True
                     st.current_daymode = 0
                 else:
+                    if st.current_daymode == 0:
+                        change = True
                     st.current_daymode = 1
                 
-            dbsql.session.commit()         
+                dbsql.session.commit()         
+                
+                if st.setup_mode == SetupMode.rtsp and change:
+                    update_rtsp_proxies([st], scheduler.app.config["RTSP_SERVER_URL"], scheduler.app.config["RTSP_SERVER_API_PORT"])
+                
             
         #Update the jobs table in the database
         jb.last_execution = datetime.now()
@@ -285,8 +294,7 @@ def records_check():
         stations = Stations.query.filter_by(setup_mode = SetupMode.rtsp).all()
         
     
-        
-        
+          
 ########################
 # Manual jobs operations
 ########################

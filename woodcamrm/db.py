@@ -33,7 +33,7 @@ class RecordMode(enum.Enum):
 class SetupMode(enum.Enum):
     monitoring = "Monitoring only" 
     mqtt = "MQTT messages"
-    rtsp = "RTSP stream"
+    rtsp = "RTSP relay"
     
     
 class Users(dbsql.Model):
