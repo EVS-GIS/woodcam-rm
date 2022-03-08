@@ -1,9 +1,9 @@
-FROM python:3.9-alpine
+FROM python:3.9
 WORKDIR /app
 
 COPY . .
 
-RUN apk add --no-cache gcc libc-dev
+# RUN apk add --no-cache gcc libc-dev
 
 RUN pip install -e .
 RUN pip install gunicorn

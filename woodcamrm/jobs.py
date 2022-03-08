@@ -17,7 +17,6 @@ from woodcamrm import save_video_file
 from woodcamrm.auth import login_required
 from woodcamrm.extensions import scheduler, dbsql, mqtt, mail
 from woodcamrm.db import SetupMode, Stations, Jobs, Users
-from woodcamrm.rtsp import update_rtsp_proxies
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 
@@ -106,14 +105,6 @@ def hydrodata_update():
                 st.current_recording = current_recording
                 st.last_record_change = trigger_time
                 dbsql.session.commit()
-
-                # Update the RTSP proxy
-                if st.setup_mode == SetupMode.rtsp and change:
-                    update_rtsp_proxies(
-                        [st],
-                        scheduler.app.config["RTSP_SERVER_URL"],
-                        scheduler.app.config["RTSP_SERVER_API_PORT"],
-                    )
 
         # Update the jobs table in the database
         jb = Jobs.query.filter_by(job_name="hydrodata_update").first()
@@ -310,13 +301,6 @@ def alive_check():
 
                 dbsql.session.commit()
 
-                if st.setup_mode == SetupMode.rtsp and change:
-                    update_rtsp_proxies(
-                        [st],
-                        scheduler.app.config["RTSP_SERVER_URL"],
-                        scheduler.app.config["RTSP_SERVER_API_PORT"],
-                    )
-
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
         jb.state = "running"
@@ -348,12 +332,12 @@ def records_check():
 
             if not last_record or time.time() > float(last_record) + (60*2):
                 if res:
-                    res.revoke(terminate=True)
+                    # res.revoke(terminate=True)
                     res = None
 
             r.set(f"st_{st.id}_record_mode", st.current_recording.name)
 
-            if not res or res.status != "PENDING":
+            if not res: # or res.status != "PENDING":
                 res = save_video_file.delay(
                     filepath=st.storage_path,
                     rtsp_url=f"rtsp://{st.ip}/axis-media/media.amp?fps=3&resolution=800x600&videocodec=h264&compression=30",

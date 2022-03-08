@@ -20,6 +20,6 @@ setup(
         'geoalchemy2',
         'suntime',
         'celery[redis]',
-        #'opencv-python'
+        'opencv-python-headless'
     ],
 )

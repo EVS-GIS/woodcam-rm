@@ -28,10 +28,11 @@ class StationForm(FlaskForm):
     phone_number = TelField('Phone number', validators=[Optional()]) 
     ip = StringField('Installation IP', validators=[Optional(), IPAddress()]) 
     setup_mode = SelectField('Setup mode', validators=[DataRequired()], choices=[
+        (SetupMode.rtsp.name, "RTSP relay"),
         (SetupMode.monitoring.name, "Monitoring"),
-        (SetupMode.mqtt.name, "MQTT messaging"),
-        (SetupMode.rtsp.name, "RTSP relay")])
+        (SetupMode.mqtt.name, "MQTT messaging")])
     mqtt_prefix = StringField('MQTT prefix (if MQTT setup)', validators=[Optional()])
+    storage_path = StringField('Storage path (if RTSP setup)', validators=[Optional()])
     camera_port = IntegerField('Camera ping port', validators=[Optional()])
     installation_port = IntegerField('Installation ping port', validators=[Optional()])
     snmp_received = StringField('SNMP MIB for received data', validators=[Optional()])

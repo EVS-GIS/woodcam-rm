@@ -17,19 +17,9 @@ services:
 
   redis:
     image: redis:6.2.6-alpine
+    restart: always
     ports:
       - '6379:6379'
-
-  rtsp:
-    image: aler9/rtsp-simple-server
-    restart: always
-    environment:
-      RTSP_API: "yes"
-      RTSP_APIADDRESS: "0.0.0.0:9997"
-      RTSP_PROTOCOLS: "tcp"
-    ports:
-      - '8554:8554'
-      - '9997:9997'
 
   mqtt:
     build: 
@@ -56,18 +46,20 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ${PWD}/.env:/app/.env
+      - /ramdisks:/app/ramdisks
 
-  # worker:
-  #   image: woodcam-rm_app:latest
-  #   restart: always
-  #   command: celery -A woodcamrm.celery worker --loglevel=info
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #   environment:
-  #     TZ: $SCHEDULER_TIMEZONE
-  #   volumes:
-  #     - ${PWD}/.env:/app/.env
+  worker:
+    image: woodcam-rm_app:latest
+    restart: always
+    command: celery -A woodcamrm.celery worker --loglevel=info
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TZ: $SCHEDULER_TIMEZONE
+    volumes:
+      - ${PWD}/.env:/app/.env
+      - /ramdisks:/app/ramdisks
 
 volumes:
   db-data:
