@@ -1,6 +1,9 @@
 import os
-from sqlite3 import ProgrammingError
+import cv2
+import time
+import redis
 
+from datetime import datetime
 from dotenv import dotenv_values
 
 from flask import Flask
@@ -11,7 +14,6 @@ from celery import Celery
 
 from woodcamrm.extensions import mqtt, dbsql, scheduler, mail
 from woodcamrm.db import Stations, SetupMode
-from woodcamrm.rtsp import update_rtsp_proxies
 
 
 celery = Celery(__name__, 
@@ -52,7 +54,7 @@ def create_app(test_config=None):
 
     with app.app_context():
         try:
-            stations = Stations.query.all()
+            stations = Stations.query.all()                
         except exc.ProgrammingError:
             stations = []
             print('The database needs to be updated. Please run flask init-db first.')
@@ -97,20 +99,9 @@ def create_app(test_config=None):
             # Mail alerts
             mqtt_client.alerts(stations)
 
-    # List all stations for sidebar
-
     @app.context_processor
     def inject_pages():
         return dict(pages=stations)
-    
-    # Check RTSP configs
-    with app.app_context():
-        try:
-            stations_rtsp = Stations.query.filter_by(setup_mode=SetupMode.rtsp).all()
-            if stations_rtsp:
-                update_rtsp_proxies(stations_rtsp, app.config['RTSP_SERVER_URL'], app.config['RTSP_SERVER_API_PORT'])
-        except exc.ProgrammingError:
-            pass
         
     from . import auth
 
@@ -126,3 +117,75 @@ def create_app(test_config=None):
     app.add_url_rule("/", endpoint="index")
 
     return app
+
+
+#####
+# Celery task definition below
+####
+
+@celery.task()
+def save_video_file(filepath, rtsp_url, station_id):
+    
+    r = redis.from_url(dotenv_values()["CELERY_BROKER_URL"])
+    recording_mode = r.get(f"st_{station_id}_record_mode")
+    
+    if recording_mode == b'no':
+        return 0
+    
+    cap = cv2.VideoCapture(rtsp_url)
+    
+    # Get current width of frame
+    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float
+    # Get current height of frame
+    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT) # float
+    
+    # Define the codec and create VideoWriter object
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+    
+    videos_number = 0
+    
+    while recording_mode == b"high":
+        videos_number+=1
+        recording_mode = r.get(f"st_{station_id}_record_mode")
+        r.set(f"st_{station_id}_last_record", time.time())
+        
+        # Define output
+        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_highflow.mkv")
+        out = cv2.VideoWriter(filename, fourcc, 3, (int(width),int(height)))
+        
+        timeout = time.time() + 60
+        while time.time() < timeout:
+            ret, frame = cap.read()
+            
+            if ret == True:
+                out.write(frame)
+                
+            else:
+                raise Exception("Stream unreachable!")
+            
+        out.release()
+    
+    if recording_mode == b"low":
+        videos_number+=1
+        r.set(f"st_{station_id}_last_record", time.time())
+        
+        # Define output
+        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_lowflow.mkv")
+        out = cv2.VideoWriter(filename, fourcc, 3, (int(width),int(height)))
+        
+        currentFrame = 0
+        while currentFrame < 15:
+            currentFrame += 1
+            ret, frame = cap.read()
+            
+            if ret == True:
+                out.write(frame)
+                
+            else:
+                raise Exception("Stream unreachable!")
+            
+        out.release()
+        
+    cap.release()
+    
+    return videos_number

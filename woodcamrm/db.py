@@ -73,6 +73,8 @@ class Stations(dbsql.Model):
     last_hydro = dbsql.Column(dbsql.Numeric)
     current_recording = dbsql.Column(dbsql.Enum(RecordMode), default="no")
     last_record_change = dbsql.Column(dbsql.DateTime, default=func.now())
+    recording_task = dbsql.Column(dbsql.String(120))
+    storage_path = dbsql.Column(dbsql.String(120))
     current_daymode = dbsql.Column(dbsql.Integer)
     temp_alert = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     sd_alert = dbsql.Column(dbsql.Integer, nullable=False, default=0)
@@ -168,6 +170,7 @@ def init_db():
                             long=5.23,
                             lat=45.91,
                             ip='193.252.53.58',
+                            storage_path='/ramdisks/ain-chazey',
                             camera_port=57091,
                             installation_port=10000) 
         test_monitoring = Stations(common_name='Bureau monitoring',
