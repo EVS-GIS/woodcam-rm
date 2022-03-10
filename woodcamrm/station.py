@@ -1,8 +1,11 @@
+import os
+import glob
+import cv2
+
 from datetime import datetime
-from tokenize import String
 
 from flask import (
-    Blueprint, flash, redirect, render_template, request, url_for
+    Blueprint, redirect, render_template, url_for, Response
 )
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, DecimalField, TelField, SelectField, FileField
@@ -107,21 +110,25 @@ def station(id):
 @bp.route("/<int:id>/stream")
 @login_required
 def stream(id):
-    # station = get_station(id)
+    station = get_station(id)
 
-    # camera = cv2.VideoCapture(
-    #     f"rtsp://{station.ip}/axis-media/media.amp?resolution=320x240&fps=1")
-    # success, frame = camera.read()
+    videos = glob.glob(os.path.join(station.storage_path, '*.mkv'))
+    
+    if videos:
+        latest = max(videos, key=os.path.getctime)
+        
+        vid = cv2.VideoCapture(latest)   
+        ret, frame = vid.read()
+        vid.release()
 
-    # if not success:
-    #     return Response()
+        _, encodedImage = cv2.imencode(".jpg", frame)
+        frame = b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + \
+            bytearray(encodedImage) + b'\r\n'
 
-    # _, encodedImage = cv2.imencode(".jpg", frame)
-    # frame = b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + \
-    #     bytearray(encodedImage) + b'\r\n'
-
-    # return Response(frame, mimetype="multipart/x-mixed-replace; boundary=frame")
-    return "not available"
+        return Response(frame, mimetype="multipart/x-mixed-replace; boundary=frame")
+    
+    else:
+        return "no stream available"
 
 
 @bp.route('/<int:id>/update', methods=('GET', 'POST'))
