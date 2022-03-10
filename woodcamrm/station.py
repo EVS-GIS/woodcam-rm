@@ -15,7 +15,7 @@ from werkzeug.exceptions import abort
 from sqlalchemy import exc
 
 from woodcamrm.auth import login_required
-from woodcamrm.db import Stations, Jobs, SetupMode
+from woodcamrm.db import Stations, Jobs
 from woodcamrm.extensions import dbsql, scheduler
 
 bp = Blueprint('station', __name__, url_prefix='/station')
@@ -30,12 +30,8 @@ class StationForm(FlaskForm):
     reset_day = IntegerField('4G plan reset day', validators=[Optional()]) 
     phone_number = TelField('Phone number', validators=[Optional()]) 
     ip = StringField('Installation IP', validators=[Optional(), IPAddress()]) 
-    setup_mode = SelectField('Setup mode', validators=[DataRequired()], choices=[
-        (SetupMode.rtsp.name, "RTSP relay"),
-        (SetupMode.monitoring.name, "Monitoring"),
-        (SetupMode.mqtt.name, "MQTT messaging")])
-    mqtt_prefix = StringField('MQTT prefix (if MQTT setup)', validators=[Optional()])
-    storage_path = StringField('Storage path (if RTSP setup)', validators=[Optional()])
+    mqtt_prefix = StringField('MQTT prefix', validators=[Optional()])
+    storage_path = StringField('Records temp storage path', validators=[Optional()])
     camera_port = IntegerField('Camera ping port', validators=[Optional()])
     installation_port = IntegerField('Installation ping port', validators=[Optional()])
     snmp_received = StringField('SNMP MIB for received data', validators=[Optional()])

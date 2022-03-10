@@ -13,7 +13,7 @@ from sqlalchemy import exc
 from celery import Celery
 
 from woodcamrm.extensions import mqtt, dbsql, scheduler, mail
-from woodcamrm.db import Stations, SetupMode
+from woodcamrm.db import Stations
 
 
 celery = Celery(__name__, 
@@ -81,14 +81,14 @@ def create_app(test_config=None):
     @mqtt.on_connect()
     def handle_connect(client, userdata, flags, rc):
         with app.app_context():
-            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt).all()
+            stations = Stations.query.filter(Stations.mqtt_prefix != None).all()
             if stations:
                 mqtt_client.subscribe_topics(stations)
 
     @mqtt.on_message()
     def handle_mqtt_message(client, userdata, message):
         with app.app_context():
-            stations = Stations.query.filter_by(setup_mode=SetupMode.mqtt).all()
+            stations = Stations.query.filter(Stations.mqtt_prefix != None).all()
             mqtt_data = mqtt_client.to_dict(stations, message)
 
             setattr(mqtt_data['station'],
@@ -127,17 +127,18 @@ def create_app(test_config=None):
 def save_video_file(filepath, rtsp_url, station_id):
     
     r = redis.from_url(dotenv_values()["CELERY_BROKER_URL"])
-    recording_mode = r.get(f"st_{station_id}_record_mode")
+    recording_mode = r.get(f"station_{station_id}:record_mode")
     
     if recording_mode == b'no':
         return 0
     
+    r.set(f"station_{station_id}:record_task:status", "started")
     cap = cv2.VideoCapture(rtsp_url)
     
     # Get current width of frame
-    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)   # float
+    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     # Get current height of frame
-    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT) # float
+    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
     
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -146,8 +147,11 @@ def save_video_file(filepath, rtsp_url, station_id):
     
     while recording_mode == b"high":
         videos_number+=1
-        recording_mode = r.get(f"st_{station_id}_record_mode")
-        r.set(f"st_{station_id}_last_record", time.time())
+        recording_mode = r.get(f"station_{station_id}:record_mode")
+        
+        # Update redis data
+        r.set(f"station_{station_id}:last_record", time.time())
+        r.set(f"station_{station_id}:record_task:status", "pending")
         
         # Define output
         filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_highflow.mkv")
@@ -161,13 +165,15 @@ def save_video_file(filepath, rtsp_url, station_id):
                 out.write(frame)
                 
             else:
+                r.set(f"station_{station_id}:record_task:status", "error")
                 raise Exception("Stream unreachable!")
             
         out.release()
     
     if recording_mode == b"low":
         videos_number+=1
-        r.set(f"st_{station_id}_last_record", time.time())
+        r.set(f"station_{station_id}:last_record", time.time())
+        r.set(f"station_{station_id}:record_task:status", "pending")
         
         # Define output
         filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_lowflow.mkv")
@@ -182,10 +188,12 @@ def save_video_file(filepath, rtsp_url, station_id):
                 out.write(frame)
                 
             else:
+                r.set(f"station_{station_id}:record_task:status", "error")
                 raise Exception("Stream unreachable!")
             
         out.release()
         
     cap.release()
+    r.set(f"station_{station_id}:record_task:status", "success")
     
     return videos_number

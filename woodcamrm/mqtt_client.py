@@ -23,7 +23,11 @@ topics = {
         'data_map': ['message', 'data', 'disruption']},
     'tampering': {
         'path': "/event/tns:onvif/VideoSource/tns:axis/Tampering/$source/channel/1",
-        'data_map': []}
+        'data_map': []},
+    'water_level': {
+        'path': "/water_level",
+        'data_map': None
+    }
 }
 
 
@@ -53,10 +57,13 @@ def to_dict(stations, message):
     def getFromDict(dataDict, mapList):
         return reduce(operator.getitem, mapList, dataDict)
 
-    data["data"] = getFromDict(
-        json.loads(message.payload.decode()),
-        topics[data["topic"]]["data_map"]
-    )
+    if topics[data["topic"]]["data_map"]:
+        data["data"] = getFromDict(
+            json.loads(message.payload.decode()),
+            topics[data["topic"]]["data_map"]
+        )
+    else:
+        data["data"] = message.payload.decode()
 
     return data
 

@@ -31,8 +31,12 @@
                         <td>{{ station.tampering }}</td>
                     </tr>
                     <tr>
-                        <th scope="row">Current water level</th>
+                        <th scope="row">Current API water level</th>
                         <td>{% if station.last_hydro %}{{ station.last_hydro/1000 }}{% endif %} m</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Current video water level</th>
+                        <td>{% if station.water_level %}{{ station.water_level }}{% endif %} m</td>
                     </tr>
                     <tr>
                         <th scope="row">Current recording mode</th>

@@ -29,12 +29,6 @@ class RecordMode(enum.Enum):
     low = "Low flow"
     no = "Not recording"
     
-
-class SetupMode(enum.Enum):
-    monitoring = "Monitoring only" 
-    mqtt = "MQTT messages"
-    rtsp = "RTSP relay"
-    
     
 class Users(dbsql.Model):
     id = dbsql.Column(dbsql.Integer, primary_key=True)
@@ -52,35 +46,42 @@ class Stations(dbsql.Model):
     id = dbsql.Column(dbsql.Integer, primary_key=True)
     common_name = dbsql.Column(dbsql.String(120), unique=True, nullable=False)
     created = dbsql.Column(dbsql.DateTime, nullable=False, default=func.now())
+    api_name = dbsql.Column(dbsql.String(120))
     long = dbsql.Column(dbsql.Numeric)
     lat = dbsql.Column(dbsql.Numeric)
-    setup_mode = dbsql.Column(dbsql.Enum(SetupMode), nullable=False, default="monitoring")
-    api_name = dbsql.Column(dbsql.String(120))
+    geom = dbsql.Column(Geometry(geometry_type='POINT', srid=4326))
+   
+    phone_number = dbsql.Column(dbsql.String(120))
     monthly_data = dbsql.Column(dbsql.Integer)
     current_data = dbsql.Column(dbsql.Numeric)
     last_data_check = dbsql.Column(dbsql.DateTime)
     reset_day = dbsql.Column(dbsql.Integer)
-    phone_number = dbsql.Column(dbsql.String(120))
+    
     ip = dbsql.Column(dbsql.String(120))
     camera_port = dbsql.Column(dbsql.Integer)
     installation_port = dbsql.Column(dbsql.Integer)
+    
     mqtt_prefix = dbsql.Column(dbsql.String(120))
     snmp_received = dbsql.Column(dbsql.String(120))
     snmp_transmitted = dbsql.Column(dbsql.String(120))
+    
     last_ping = dbsql.Column(dbsql.DateTime)
     ping_alert = dbsql.Column(dbsql.Boolean, nullable=False, default=False)
+    
     last_hydro_time = dbsql.Column(dbsql.DateTime)
     last_hydro = dbsql.Column(dbsql.Numeric)
+    water_level = dbsql.Column(dbsql.Numeric)
+    
     current_recording = dbsql.Column(dbsql.Enum(RecordMode), default="no")
     last_record_change = dbsql.Column(dbsql.DateTime, default=func.now())
-    recording_task = dbsql.Column(dbsql.String(120))
     storage_path = dbsql.Column(dbsql.String(120))
+    
     current_daymode = dbsql.Column(dbsql.Integer)
     temp_alert = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     sd_alert = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     sd_disruption = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     tampering = dbsql.Column(dbsql.Integer, nullable=False, default=0)
-    geom = dbsql.Column(Geometry(geometry_type='POINT', srid=4326))
+    
     jan_threshold = dbsql.Column(dbsql.Numeric)
     feb_threshold = dbsql.Column(dbsql.Numeric)
     mar_threshold = dbsql.Column(dbsql.Numeric)
@@ -153,40 +154,31 @@ def init_db():
     dbsql.session.add(check_data_plan)
     
     if current_app.config['DEBUG']:
+        
         test_mqtt = Stations(common_name='Bureau MQTT',
                             api_name='V2942010',
-                            setup_mode='mqtt',
                             long=4.83,
                             lat=45.73,
                             monthly_data=10000,
                             reset_day=4,
                             ip='10.8.0.2',
+                            storage_path='/opt/woodcam-rm/data/bureau',
                             mqtt_prefix='camera/bureau',
                             camera_port=8080,
                             installation_port=80)
+        
         test_rtsp = Stations(common_name='Chazey RTSP',
                             api_name='V2942010',
-                            setup_mode='rtsp',
                             long=5.23,
                             lat=45.91,
                             ip='193.252.53.58',
-                            storage_path='/ramdisks/ain-chazey',
+                            storage_path='/opt/woodcam-rm/data/ain-chazey',
+                            mqtt_prefix='camera/chazey',
                             camera_port=57091,
                             installation_port=10000) 
-        test_monitoring = Stations(common_name='Bureau monitoring',
-                            api_name='V2942010',
-                            setup_mode='monitoring',
-                            long=4.83,
-                            lat=45.73,
-                            monthly_data=10000,
-                            reset_day=4,
-                            ip='10.8.0.2',
-                            mqtt_prefix='camera/bureau',
-                            camera_port=8080,
-                            installation_port=80)               
+         
         dbsql.session.add(test_mqtt)
         dbsql.session.add(test_rtsp)
-        dbsql.session.add(test_monitoring)
         
     dbsql.session.commit()
 

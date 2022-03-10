@@ -6,7 +6,6 @@ import time
 
 from datetime import datetime
 from suntime import Sun
-from celery.result import AsyncResult
 
 from flask import Blueprint, redirect, url_for
 from flask_mail import Message
@@ -16,7 +15,7 @@ from pysnmp.hlapi import *
 from woodcamrm import save_video_file
 from woodcamrm.auth import login_required
 from woodcamrm.extensions import scheduler, dbsql, mqtt, mail
-from woodcamrm.db import SetupMode, Stations, Jobs, Users
+from woodcamrm.db import Stations, Jobs, Users
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 
@@ -71,7 +70,7 @@ def hydrodata_update():
                         current_recording = "high"
 
                         # Push the recording mode to the MQTT broker
-                        if st.setup_mode == SetupMode.mqtt:
+                        if st.mqtt_prefix != None:
                             mqtt.publish(
                                 f"{st.mqtt_prefix}/flow_trigger",
                                 "On",
@@ -89,7 +88,7 @@ def hydrodata_update():
                         current_recording = "low"
 
                         # Push the recording mode to the MQTT broker
-                        if st.setup_mode == SetupMode.mqtt:
+                        if st.mqtt_prefix != None:
                             mqtt.publish(
                                 f"{st.mqtt_prefix}/flow_trigger",
                                 "Off",
@@ -275,13 +274,8 @@ def alive_check():
 
                     st.ping_alert = True
 
-            # If all ping are ok, update daymode if station is not MQTT enabled
-            if (
-                not st.ping_alert
-                and st.setup_mode != SetupMode.mqtt
-                and st.long
-                and st.lat
-            ):
+            # If all ping are ok, update daymode
+            if not st.ping_alert and st.long and st.lat:
 
                 sun = Sun(lat=float(st.lat), lon=float(st.long))
                 sunrise = sun.get_local_sunrise_time()
@@ -319,42 +313,47 @@ def records_check():
         jb = Jobs.query.filter_by(job_name="records_check").first()
         r = redis.from_url(scheduler.app.config["CELERY_BROKER_URL"])
 
-        # List RTSP stations
-        stations = Stations.query.filter_by(setup_mode=SetupMode.rtsp).all()
+        # List RTSP enabled stations with storage path
+        stations = Stations.query.filter(Stations.storage_path != None).filter().all()
 
         for st in stations:
-            last_record = r.get(f"st_{st.id}_last_record")
+            last_record = r.get(f"station_{st.id}:last_record")
+            record_status = r.get(f"station_{st.id}:record_task:status")
+            record_task = r.get(f"station_{st.id}:record_task:id")
 
-            if st.recording_task:
-                res = AsyncResult(st.recording_task)
+            if record_task and (record_status not in [b"error", b"success"]):
+                running_task = True
             else:
-                res = None
+                running_task = False
 
-            if not last_record or time.time() > float(last_record) + (60*2):
-                if res:
-                    # res.revoke(terminate=True)
-                    res = None
+            if (
+                running_task
+                and last_record
+                and time.time() < float(last_record) + (60 * 2)
+            ):
+                pass
+            elif running_task:
+                running_task = False
 
-            r.set(f"st_{st.id}_record_mode", st.current_recording.name)
+            r.set(f"station_{st.id}:record_mode", st.current_recording.name)
 
-            if not res: # or res.status != "PENDING":
+            if not running_task:
                 res = save_video_file.delay(
                     filepath=st.storage_path,
                     rtsp_url=f"rtsp://{st.ip}/axis-media/media.amp?fps=3&resolution=800x600&videocodec=h264&compression=30",
                     station_id=st.id,
                 )
 
-                st.recording_task = res.id
+                r.set(f"station_{st.id}:record_task:id", res.id)
 
             # TODO: Merge RAM videos in definitive video befor deleting
 
             # Delete RAM files older than 10min
             for f in os.listdir(st.storage_path):
                 fpath = os.path.join(st.storage_path, f)
-                if time.time() - os.stat(fpath).st_mtime > (10*60):
+                if time.time() - os.stat(fpath).st_mtime > (10 * 60):
                     os.remove(fpath)
-                    
-                    
+
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
         jb.state = "running"

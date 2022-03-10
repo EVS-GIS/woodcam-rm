@@ -134,3 +134,6 @@ dmypy.json
 # Mosquitto passwordfile and certs
 mosquitto/passwordfile
 mosquitto/certs/*.pem
+
+# Video data files
+data/
