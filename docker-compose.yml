@@ -34,6 +34,18 @@ services:
     volumes:
       - mqtt-data:/mosquitto/data
     
+  ftp:
+    image: delfer/alpine-ftp-server
+    restart: always
+    environment:
+      USERS: ${FTP_USER}|${FTP_PASSWORD}|/data
+      ADDRESS: ${APP_URL}
+    ports:
+      - "21:21"
+      - "21000-21010:21000-21010"
+    volumes:
+      - video-data:/data
+
   app:
     build: .
     restart: always
@@ -46,7 +58,7 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ${PWD}/.env:/app/.env
-      - /ramdisks:/app/ramdisks
+      - video-data:/app/ramdisks/ain-chazey
 
   worker:
     image: woodcam-rm_app:latest
@@ -59,8 +71,12 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ${PWD}/.env:/app/.env
-      - /ramdisks:/app/ramdisks
+      - video-data:/app/ramdisks/ain-chazey
 
 volumes:
   db-data:
   mqtt-data:
+  video-data:
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
