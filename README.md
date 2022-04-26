@@ -91,8 +91,8 @@ sudo systemctl start woodcamrm.service
 docker-compose up -d
 
 # Create database
-docker exec woodcam-rm_app_1 flask init-db # Only the first time to seed the first data
-docker exec woodcam-rm_app_1 flask db upgrade # At each woodcamrm version upgrade
+docker-compose exec app flask init-db # Only the first time to seed the first data
+docker-compose exec app flask db upgrade # At each woodcamrm version upgrade
 
 # Restart services
 docker-compose restart

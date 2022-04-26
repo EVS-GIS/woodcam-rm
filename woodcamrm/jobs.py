@@ -314,7 +314,7 @@ def records_check():
         r = redis.from_url(scheduler.app.config["CELERY_BROKER_URL"])
 
         # List RTSP enabled stations with storage path
-        stations = Stations.query.filter(Stations.storage_path != None).filter().all()
+        stations = Stations.query.filter(Stations.storage_path != None).filter(Stations.rtsp_url != None).all()
 
         for st in stations:
             if not os.path.isdir(st.storage_path):
@@ -343,7 +343,7 @@ def records_check():
             if not running_task:
                 res = save_video_file.delay(
                     filepath=st.storage_path,
-                    rtsp_url=f"rtsp://{st.ip}/axis-media/media.amp?fps=3&resolution=800x600&videocodec=h264&compression=30",
+                    rtsp_url=st.rtsp_url,
                     station_id=st.id,
                 )
 

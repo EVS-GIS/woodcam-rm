@@ -82,10 +82,7 @@ class Stations(dbsql.Model):
     sd_disruption = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     tampering = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     
-    rec_resolution = dbsql.Column(dbsql.String(12))
-    rec_fps = dbsql.Column(dbsql.Integer, default=3)
-    rec_codec = dbsql.Column(dbsql.String(12), default="h264")
-    rec_compression = dbsql.Column(dbsql.Integer, default=30)
+    rtsp_url = dbsql.Column(dbsql.String(120))
     
     jan_threshold = dbsql.Column(dbsql.Numeric)
     feb_threshold = dbsql.Column(dbsql.Numeric)
@@ -158,29 +155,29 @@ def init_db():
     dbsql.session.add(download_records)
     dbsql.session.add(check_data_plan)
     
-    if current_app.config['DEBUG']:
+    # if current_app.config['DEBUG']:
         
-        test_mqtt = Stations(common_name='Bureau MQTT',
-                            api_name='V2942010',
-                            long=4.83,
-                            lat=45.73,
-                            monthly_data=10000,
-                            reset_day=4,
-                            ip='10.8.0.2',
-                            storage_path='/opt/woodcam-rm/data/bureau',
-                            mqtt_prefix='camera/bureau',
-                            camera_port=8080,
-                            installation_port=80)
+    #     test_mqtt = Stations(common_name='Bureau MQTT',
+    #                         api_name='V2942010',
+    #                         long=4.83,
+    #                         lat=45.73,
+    #                         monthly_data=10000,
+    #                         reset_day=4,
+    #                         ip='10.8.0.2',
+    #                         storage_path='/opt/woodcam-rm/data/bureau',
+    #                         mqtt_prefix='camera/bureau',
+    #                         camera_port=8080,
+    #                         installation_port=80)
         
-        test_rtsp = Stations(common_name='Chazey RTSP',
-                            api_name='V2942010',
-                            long=5.23,
-                            lat=45.91,
-                            ip='193.252.53.58',
-                            storage_path='/opt/woodcam-rm/data/ain-chazey',
-                            mqtt_prefix='camera/chazey',
-                            camera_port=57091,
-                            installation_port=10000) 
+    #     test_rtsp = Stations(common_name='Chazey RTSP',
+    #                         api_name='V2942010',
+    #                         long=5.23,
+    #                         lat=45.91,
+    #                         ip='193.252.53.58',
+    #                         storage_path='/opt/woodcam-rm/data/ain-chazey',
+    #                         mqtt_prefix='camera/chazey',
+    #                         camera_port=57091,
+    #                         installation_port=10000) 
          
         dbsql.session.add(test_mqtt)
         dbsql.session.add(test_rtsp)
