@@ -33,7 +33,8 @@ cp .env.example .env
 vi .env 
 
 # Initialize database
-flask init-db
+flask init-db # Only the first time to seed the first data
+flask db upgrade # At each woodcamrm version upgrade
 
 # Run application
 flask run
@@ -90,7 +91,8 @@ sudo systemctl start woodcamrm.service
 docker-compose up -d
 
 # Create database
-docker exec woodcam-rm_app_1 flask init-db -y
+docker exec woodcam-rm_app_1 flask init-db # Only the first time to seed the first data
+docker exec woodcam-rm_app_1 flask db upgrade # At each woodcamrm version upgrade
 
 # Restart services
 docker-compose restart

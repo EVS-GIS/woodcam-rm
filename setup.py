@@ -13,6 +13,7 @@ setup(
         'flask-mqtt',
         'flask-mail',
         'flask-wtf',
+        'flask-migrate',
         'psycopg2-binary',
         'requests',
         'python-dotenv',

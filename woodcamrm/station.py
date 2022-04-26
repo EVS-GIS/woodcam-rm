@@ -36,6 +36,7 @@ class StationForm(FlaskForm):
     installation_port = IntegerField('Installation ping port', validators=[Optional()])
     snmp_received = StringField('SNMP MIB for received data', validators=[Optional()])
     snmp_transmitted = StringField('SNMP MIB for transmitted data', validators=[Optional()])
+    
     jan_threshold = DecimalField('Water level threshold january (mm)', validators=[Optional()]) 
     feb_threshold = DecimalField('Water level threshold february (mm)', validators=[Optional()]) 
     mar_threshold = DecimalField('Water level threshold march (mm)', validators=[Optional()]) 

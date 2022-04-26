@@ -82,6 +82,11 @@ class Stations(dbsql.Model):
     sd_disruption = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     tampering = dbsql.Column(dbsql.Integer, nullable=False, default=0)
     
+    rec_resolution = dbsql.Column(dbsql.String(12))
+    rec_fps = dbsql.Column(dbsql.Integer, default=3)
+    rec_codec = dbsql.Column(dbsql.String(12), default="h264")
+    rec_compression = dbsql.Column(dbsql.Integer, default=30)
+    
     jan_threshold = dbsql.Column(dbsql.Numeric)
     feb_threshold = dbsql.Column(dbsql.Numeric)
     mar_threshold = dbsql.Column(dbsql.Numeric)

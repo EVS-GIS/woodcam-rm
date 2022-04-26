@@ -12,7 +12,7 @@ from sqlalchemy import exc
 
 from celery import Celery
 
-from woodcamrm.extensions import mqtt, dbsql, scheduler, mail
+from woodcamrm.extensions import mqtt, dbsql, scheduler, mail, migrate
 from woodcamrm.db import Stations
 
 
@@ -51,6 +51,7 @@ def create_app(test_config=None):
 
     dbsql.init_app(app)
     db.init_app(app)
+    migrate.init_app(app, dbsql)
 
     with app.app_context():
         try:

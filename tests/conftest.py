@@ -2,10 +2,7 @@ import os
 
 import pytest
 from woodcamrm import create_app
-from woodcamrm.db import get_db, init_db
-
-with open(os.path.join(os.path.dirname(__file__), 'data.sql'), 'rb') as f:
-    _data_sql = f.read().decode('utf8')
+from woodcamrm.db import init_db
 
 
 @pytest.fixture
@@ -18,11 +15,6 @@ def app():
 
     with app.app_context():
         init_db()
-        db = get_db()
-        cur = db.cursor()
-        cur.execute(_data_sql)
-        cur.close()
-        db.commit()
 
     yield app
 
@@ -41,7 +33,7 @@ class AuthActions(object):
     def __init__(self, client):
         self._client = client
 
-    def login(self, username='test', password='test'):
+    def login(self, username=app.config['DEFAULT_USER'], password=app.config['DEFAULT_PASSWORD']):
         return self._client.post(
             '/auth/login',
             data={'username': username, 'password': password}
