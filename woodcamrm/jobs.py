@@ -317,6 +317,9 @@ def records_check():
         stations = Stations.query.filter(Stations.storage_path != None).filter().all()
 
         for st in stations:
+            if not os.path.isdir(st.storage_path):
+                os.mkdir(st.storage_path)
+            
             last_record = r.get(f"station_{st.id}:last_record")
             record_status = r.get(f"station_{st.id}:record_task:status")
             record_task = r.get(f"station_{st.id}:record_task:id")
@@ -348,7 +351,7 @@ def records_check():
 
             # TODO: Merge RAM videos in definitive video befor deleting
 
-            # Delete RAM files older than 10min
+            # Delete RAM files older than 10min              
             for f in os.listdir(st.storage_path):
                 fpath = os.path.join(st.storage_path, f)
                 if time.time() - os.stat(fpath).st_mtime > (10 * 60):

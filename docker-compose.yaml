@@ -2,8 +2,10 @@ version: "3.9"
 services:
   db:
     image: postgis/postgis:13-3.2-alpine
+    container_name: woodcamrm_db
     restart: always
     environment:
+      TZ: $SCHEDULER_TIMEZONE
       POSTGRES_DB: $POSTGRES_DB
       POSTGRES_USER: $POSTGRES_USER
       POSTGRES_PASSWORD: $POSTGRES_PASSWORD
@@ -16,10 +18,15 @@ services:
       - db-data:/var/lib/postgresql/data
 
   redis:
-    image: redis:6.2.6-alpine
+    image: redis:7.0-rc2-alpine
+    container_name: woodcamrm_redis
     restart: always
-    ports:
-      - '6379:6379'
+    environment:
+      TZ: $SCHEDULER_TIMEZONE
+      REDIS_PASSWORD: $REDIS_PASSWORD
+    # volumes:
+    #   - redis-data:/data
+    command: redis-server --save 20 1 --loglevel warning --stop-writes-on-bgsave-error no --requirepass ${REDIS_PASSWORD}
 
   mqtt:
     build: 
@@ -27,7 +34,10 @@ services:
       args:
         mqtt_username: ${MQTT_USERNAME}
         mqtt_password: ${MQTT_PASSWORD}
+    container_name: woodcamrm_mqtt
     restart: always
+    environment:
+      TZ: $SCHEDULER_TIMEZONE
     ports:
       - '1883:1883'
       - '8883:8883'
@@ -36,8 +46,10 @@ services:
     
   ftp:
     image: delfer/alpine-ftp-server
+    container_name: woodcamrm_ftp
     restart: always
     environment:
+      TZ: $SCHEDULER_TIMEZONE
       USERS: ${FTP_USER}|${FTP_PASSWORD}|/data
       ADDRESS: ${APP_URL}
     ports:
@@ -48,6 +60,7 @@ services:
 
   app:
     build: .
+    container_name: woodcamrm_app
     restart: always
     depends_on:
       db:
@@ -58,10 +71,11 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ${PWD}/.env:/app/.env
-      - video-data:/app/ramdisks/ain-chazey
+      - video-data:/data
 
   worker:
     image: woodcam-rm_app:latest
+    container_name: woodcamrm_worker
     restart: always
     command: celery -A woodcamrm.celery worker --loglevel=info
     depends_on:
@@ -71,11 +85,12 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ${PWD}/.env:/app/.env
-      - video-data:/app/ramdisks/ain-chazey
+      - video-data:/data
 
 volumes:
   db-data:
   mqtt-data:
+  redis-data:
   video-data:
     driver_opts:
       type: tmpfs

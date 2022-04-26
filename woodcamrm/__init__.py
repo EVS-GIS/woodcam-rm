@@ -133,6 +133,10 @@ def save_video_file(filepath, rtsp_url, station_id):
         return 0
     
     r.set(f"station_{station_id}:record_task:status", "started")
+    
+    if not os.path.isdir(filepath):
+        os.mkdir(filepath)
+        
     cap = cv2.VideoCapture(rtsp_url)
     
     # Get current width of frame
