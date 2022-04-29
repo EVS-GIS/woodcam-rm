@@ -25,7 +25,8 @@ def create_app(test_config=None):
     # create and configure the app
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_mapping(dotenv_values())
-    app.config['MQTT_BROKER_PORT'] = int(app.config['MQTT_BROKER_PORT'])
+    if app.config['MQTT_BROKER_PORT']:
+        app.config['MQTT_BROKER_PORT'] = int(app.config['MQTT_BROKER_PORT'])
     
     for key in app.config.keys():
         if str(app.config[key]).lower() == "true":
@@ -75,30 +76,31 @@ def create_app(test_config=None):
         celery.conf.update(app.config)
 
     # MQTT client
-    from . import mqtt_client
-    if stations:
-        mqtt.init_app(app)
+    if app.config['MQTT_BROKER_URL']:
+        from . import mqtt_client
+        if stations:
+            mqtt.init_app(app)
 
-    @mqtt.on_connect()
-    def handle_connect(client, userdata, flags, rc):
-        with app.app_context():
-            stations = Stations.query.filter(Stations.mqtt_prefix != None).all()
-            if stations:
-                mqtt_client.subscribe_topics(stations)
+        @mqtt.on_connect()
+        def handle_connect(client, userdata, flags, rc):
+            with app.app_context():
+                stations = Stations.query.filter(Stations.mqtt_prefix != None).all()
+                if stations:
+                    mqtt_client.subscribe_topics(stations)
 
-    @mqtt.on_message()
-    def handle_mqtt_message(client, userdata, message):
-        with app.app_context():
-            stations = Stations.query.filter(Stations.mqtt_prefix != None).all()
-            mqtt_data = mqtt_client.to_dict(stations, message)
+        @mqtt.on_message()
+        def handle_mqtt_message(client, userdata, message):
+            with app.app_context():
+                stations = Stations.query.filter(Stations.mqtt_prefix != None).all()
+                mqtt_data = mqtt_client.to_dict(stations, message)
 
-            setattr(mqtt_data['station'],
-                    mqtt_data['topic'], mqtt_data['data'])
+                setattr(mqtt_data['station'],
+                        mqtt_data['topic'], mqtt_data['data'])
+                    
+                dbsql.session.commit()
                 
-            dbsql.session.commit()
-            
-            # Mail alerts
-            mqtt_client.alerts(stations)
+                # Mail alerts
+                mqtt_client.alerts(stations)
 
     @app.context_processor
     def inject_pages():
