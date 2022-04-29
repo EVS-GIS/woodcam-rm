@@ -154,33 +154,6 @@ def init_db():
     dbsql.session.add(records_check)
     dbsql.session.add(download_records)
     dbsql.session.add(check_data_plan)
-    
-    # if current_app.config['DEBUG']:
-        
-    #     test_mqtt = Stations(common_name='Bureau MQTT',
-    #                         api_name='V2942010',
-    #                         long=4.83,
-    #                         lat=45.73,
-    #                         monthly_data=10000,
-    #                         reset_day=4,
-    #                         ip='10.8.0.2',
-    #                         storage_path='/opt/woodcam-rm/data/bureau',
-    #                         mqtt_prefix='camera/bureau',
-    #                         camera_port=8080,
-    #                         installation_port=80)
-        
-    #     test_rtsp = Stations(common_name='Chazey RTSP',
-    #                         api_name='V2942010',
-    #                         long=5.23,
-    #                         lat=45.91,
-    #                         ip='193.252.53.58',
-    #                         storage_path='/opt/woodcam-rm/data/ain-chazey',
-    #                         mqtt_prefix='camera/chazey',
-    #                         camera_port=57091,
-    #                         installation_port=10000) 
-         
-        dbsql.session.add(test_mqtt)
-        dbsql.session.add(test_rtsp)
         
     dbsql.session.commit()
 

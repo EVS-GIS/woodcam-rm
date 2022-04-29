@@ -83,7 +83,7 @@ def add():
         scheduler.get_job(id="alive_check").modify(
             next_run_time=datetime.now())
         
-        return redirect(url_for('station.station', id=id))
+        return redirect(url_for('station.index'))
         
     return render_template('station/add.html', station=station, selected='addstation', form=form)
 

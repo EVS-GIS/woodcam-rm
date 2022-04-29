@@ -130,6 +130,8 @@ def save_video_file(filepath, rtsp_url, station_id):
     r = redis.from_url(dotenv_values()["CELERY_BROKER_URL"])
     recording_mode = r.get(f"station_{station_id}:record_mode")
     
+    print(f"task for station {station_id} in {recording_mode} recording mode")
+    
     if recording_mode == b'no':
         return 0
     
