@@ -5,7 +5,6 @@ from flask import current_app
 from flask.cli import with_appcontext
 
 from sqlalchemy.sql import func
-from geoalchemy2.types import Geometry
 
 from werkzeug.security import generate_password_hash
 
@@ -49,7 +48,6 @@ class Stations(dbsql.Model):
     api_name = dbsql.Column(dbsql.String(120))
     long = dbsql.Column(dbsql.Numeric)
     lat = dbsql.Column(dbsql.Numeric)
-    geom = dbsql.Column(Geometry(geometry_type='POINT', srid=4326))
    
     phone_number = dbsql.Column(dbsql.String(120))
     monthly_data = dbsql.Column(dbsql.Integer)
@@ -121,12 +119,11 @@ class Settings(dbsql.Model):
     
     def __repr__(self):
         return '<Job %r>' % self.parameter
-    
 
-def init_db():
-    dbsql.drop_all()
-    dbsql.create_all()
-    
+
+@click.command("seed-db")
+@with_appcontext
+def seed_db():
     default_user = Users(username=current_app.config['DEFAULT_USER'], 
                         password=generate_password_hash(current_app.config['DEFAULT_PASSWORD']),
                         role='admin',
@@ -156,28 +153,8 @@ def init_db():
     dbsql.session.add(check_data_plan)
         
     dbsql.session.commit()
-
-
-@click.command("init-db")
-@click.option("--yes", "-y", is_flag=True, help="Don't ask for confirmation.")
-@with_appcontext
-def init_db_command(yes):
-    """Clear the existing data and create new tables."""
-
-    if yes:
-        confirmation = "yes"
-    else:
-        confirmation = input(
-            "Warning: this irreversible action will completely reset any existing WoodCamRM database. Are you sure? [y/N]"
-        )
-        
-    if confirmation.lower() in ["y", "yes"]:
-        init_db()
-        click.echo("Initialized the database.")
-    else:
-        click.echo("Aborted")
         
 
 def init_app(app):
-    app.cli.add_command(init_db_command)
+    app.cli.add_command(seed_db)
     
