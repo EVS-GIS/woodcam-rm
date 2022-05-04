@@ -4,6 +4,7 @@ import requests
 import redis
 import time
 
+from ftplib import FTP
 from datetime import datetime
 from suntime import Sun
 from moviepy.editor import VideoFileClip, concatenate_videoclips
@@ -384,11 +385,17 @@ def download_records():
                     src_clips = [VideoFileClip(f) for f in src]
                     
                     # Concatenate video clips
+                    dest = os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mkv")
                     final = concatenate_videoclips(src_clips)
-                    final.write_videofile(os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mkv"))
+                    final.write_videofile(dest)
                     
-                    # TODO: send concatenated clips to archive server
-                     
+                    # Send concatenated clips to archive server
+                    ftp = FTP(scheduler.app.config["ARCHIVE_HOST"], scheduler.app.config["ARCHIVE_USER"], scheduler.app.config["ARCHIVE_PASSWORD"])
+                    f = open(dest, 'rb')
+                    ftp.storbinary('STOR ' + os.path.basename(dest), f)
+                    f.close()
+                    ftp.close()
+                    
                     # Remove temp video clips
                     for f in src:
                         os.remove(f)
