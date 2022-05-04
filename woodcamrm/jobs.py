@@ -6,6 +6,7 @@ import time
 
 from datetime import datetime
 from suntime import Sun
+from moviepy.editor import VideoFileClip, concatenate_videoclips
 
 from flask import Blueprint, redirect, url_for
 from flask_mail import Message
@@ -349,20 +350,56 @@ def records_check():
 
                 r.set(f"station_{st.id}:record_task:id", res.id)
 
-            # TODO: Merge RAM videos in definitive video befor deleting
-
-            # Delete RAM files older than 10min              
-            for f in os.listdir(st.storage_path):
-                fpath = os.path.join(st.storage_path, f)
-                if time.time() - os.stat(fpath).st_mtime > (10 * 60):
-                    os.remove(fpath)
-
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
         jb.state = "running"
         dbsql.session.commit()
 
 
+@scheduler.task(
+    "interval",
+    id="download_records",
+    seconds=600,
+    max_instances=1,
+    start_date="2022-01-01 12:00:00",
+)
+def download_records():
+    with scheduler.app.app_context():
+        jb = Jobs.query.filter_by(job_name="download_records").first()
+        stations = Stations.query.filter(Stations.storage_path != None).filter(Stations.rtsp_url != None).all()
+        
+        for st in stations:
+            if not os.path.isdir(st.storage_path):
+                continue
+            elif not os.listdir(st.storage_path):
+                continue
+            else:
+                src = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path) if time.time() - os.stat(f).st_mtime > (10*60)]
+                
+                if not src:
+                    continue
+                else:
+                    # Open source video clips
+                    src.sort()
+                    src_clips = [VideoFileClip(f) for f in src]
+                    
+                    # Concatenate video clips
+                    final = concatenate_videoclips(src_clips)
+                    final.write_videofile(os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mkv"))
+                    
+                    # TODO: send concatenated clips to archive server
+                     
+                    # Remove temp video clips
+                    for f in src:
+                        os.remove(f)
+
+                
+        # Update the jobs table in the database
+        jb.last_execution = datetime.now()
+        jb.state = "running"
+        dbsql.session.commit()
+        
+        
 ########################
 # Manual jobs operations
 ########################
