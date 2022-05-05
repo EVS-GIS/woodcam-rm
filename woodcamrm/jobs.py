@@ -1,10 +1,12 @@
+from cgi import test
 import os
 import socket
+from threading import current_thread
 import requests
 import redis
 import time
 
-from ftplib import FTP
+from ftplib import FTP, error_perm
 from datetime import datetime
 from suntime import Sun
 from moviepy.editor import VideoFileClip, concatenate_videoclips
@@ -32,6 +34,11 @@ bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 def hydrodata_update():
     """This job update the hydro metrics and check if the thresholds are triggered."""
     with scheduler.app.app_context():
+        jb = Jobs.query.filter_by(job_name="hydrodata_update").first()
+        jb.last_execution = datetime.now()
+        jb.state = "warn"
+        dbsql.session.commit()
+        
         stations = Stations.query.all()
 
         for st in stations:
@@ -108,7 +115,6 @@ def hydrodata_update():
                 dbsql.session.commit()
 
         # Update the jobs table in the database
-        jb = Jobs.query.filter_by(job_name="hydrodata_update").first()
         jb.last_execution = datetime.now()
         jb.state = "running"
         dbsql.session.commit()
@@ -124,9 +130,13 @@ def hydrodata_update():
 def check_data_plan():
     """Retrieve data usage from router using SNMP protocol."""
     with scheduler.app.app_context():
-        stations = Stations.query.all()
         jb = Jobs.query.filter_by(job_name="check_data_plan").first()
+        jb.last_execution = datetime.now()
+        jb.state = "warn"
+        dbsql.session.commit()
 
+        stations = Stations.query.all()
+        
         for st in stations:
             # Check if station IP is informed
             if st.ip and (st.snmp_received or st.snmp_transmitted):
@@ -204,6 +214,9 @@ def alive_check():
     with scheduler.app.app_context():
         stations = Stations.query.filter(Stations.ip != None).all()
         jb = Jobs.query.filter_by(job_name="alive_check").first()
+        jb.last_execution = datetime.now()
+        jb.state = "warn"
+        dbsql.session.commit()
 
         for st in stations:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -313,6 +326,10 @@ def alive_check():
 def records_check():
     with scheduler.app.app_context():
         jb = Jobs.query.filter_by(job_name="records_check").first()
+        jb.last_execution = datetime.now()
+        jb.state = "warn"
+        dbsql.session.commit()
+        
         r = redis.from_url(scheduler.app.config["CELERY_BROKER_URL"])
 
         # List RTSP enabled stations with storage path
@@ -367,6 +384,10 @@ def records_check():
 def download_records():
     with scheduler.app.app_context():
         jb = Jobs.query.filter_by(job_name="download_records").first()
+        jb.last_execution = datetime.now()
+        jb.state = "warn"
+        dbsql.session.commit()
+        
         stations = Stations.query.filter(Stations.storage_path != None).filter(Stations.rtsp_url != None).all()
         
         for st in stations:
@@ -375,7 +396,10 @@ def download_records():
             elif not os.listdir(st.storage_path):
                 continue
             else:
-                src = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path) if time.time() - os.stat(f).st_mtime > (10*60)]
+                src = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path)
+                        if not os.path.isdir(os.path.join(st.storage_path, f)) 
+                        and time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime > (10*60)]
+                print(src)
                 
                 if not src:
                     continue
@@ -384,22 +408,55 @@ def download_records():
                     src.sort()
                     src_clips = [VideoFileClip(f) for f in src]
                     
+                    if not os.path.isdir(os.path.join(st.storage_path, 'merged_clips')):
+                        os.mkdir(os.path.join(st.storage_path, 'merged_clips'))
+                    
                     # Concatenate video clips
-                    dest = os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mkv")
+                    dest = os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mp4")
                     final = concatenate_videoclips(src_clips)
                     final.write_videofile(dest)
                     
-                    # Send concatenated clips to archive server
-                    ftp = FTP(scheduler.app.config["ARCHIVE_HOST"], scheduler.app.config["ARCHIVE_USER"], scheduler.app.config["ARCHIVE_PASSWORD"])
-                    f = open(dest, 'rb')
-                    ftp.storbinary('STOR ' + os.path.basename(dest), f)
-                    f.close()
-                    ftp.close()
-                    
+                    # Connection to archive server
+                    with FTP(scheduler.app.config["ARCHIVE_HOST"], 
+                             scheduler.app.config["ARCHIVE_USER"], 
+                             scheduler.app.config["ARCHIVE_PASSWORD"]) as ftp:
+                        
+                        # Create directory if do not exist
+                        dst_path = os.path.join(scheduler.app.config["ARCHIVE_PATH"],
+                                                st.common_name, 
+                                                'woodcamrm-archived-clips', 
+                                                datetime.now().strftime('%Y'),
+                                                datetime.now().strftime('%m'),
+                                                datetime.now().strftime('%d')
+                                            )
+                        
+                        dirs = []
+                        testdir = dst_path
+                        while testdir != "":
+                            dirs.append(testdir)
+                            testdir = os.path.dirname(testdir)
+                        
+                        dirs.reverse()
+                        
+                        for dir_checked in dirs:
+                            try:
+                                ftp.cwd(dir_checked)
+                            except error_perm:
+                                ftp.mkd(dir_checked)
+                            
+                            ftp.cwd('/')
+
+                        # Send concatenated video clip to archive server
+                        with open(dest, 'rb') as f:
+                            ftp.cwd(dst_path)
+                            ftp.storbinary('STOR ' + os.path.basename(dest), f)
+                            
+                    # Remove temp merged video clips
+                    os.remove(dest)
+
                     # Remove temp video clips
                     for f in src:
                         os.remove(f)
-
                 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()

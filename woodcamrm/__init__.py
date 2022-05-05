@@ -163,7 +163,7 @@ def save_video_file(filepath, rtsp_url, station_id):
         r.set(f"station_{station_id}:record_task:status", "pending")
         
         # Define output
-        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_highflow.mkv")
+        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_highflow.avi")
         out = cv2.VideoWriter(filename, fourcc, 3, (int(width),int(height)))
         
         timeout = time.time() + 60
@@ -175,6 +175,7 @@ def save_video_file(filepath, rtsp_url, station_id):
                 
             else:
                 r.set(f"station_{station_id}:record_task:status", "error")
+                out.release()
                 raise Exception("Stream unreachable!")
             
         out.release()
@@ -185,7 +186,7 @@ def save_video_file(filepath, rtsp_url, station_id):
         r.set(f"station_{station_id}:record_task:status", "pending")
         
         # Define output
-        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_lowflow.mkv")
+        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_lowflow.avi")
         out = cv2.VideoWriter(filename, fourcc, 3, (int(width),int(height)))
         
         currentFrame = 0

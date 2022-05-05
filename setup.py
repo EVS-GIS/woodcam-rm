@@ -21,6 +21,7 @@ setup(
         'geoalchemy2',
         'suntime',
         'celery[redis]',
-        'opencv-python-headless'
+        'opencv-python-headless',
+        'moviepy'
     ],
 )

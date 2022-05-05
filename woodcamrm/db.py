@@ -131,16 +131,16 @@ def seed_db():
                         notify=True)
     alive_check = Jobs(job_name = 'alive_check',
                        full_name = 'Alive check',
-                       description = 'Check if all cameras are reachable and send mail notifications if not. Run data recovery after a service interruption.')
+                       description = 'Check if all cameras are reachable and send mail notifications if not.')
     hydrodata_update = Jobs(job_name = 'hydrodata_update',
                        full_name = 'Update hydro metrics',
                        description = 'Update hydro metrics with external API and trigger recording if needed.')    
     records_check = Jobs(job_name = 'records_check',
                        full_name = 'Check records',
-                       description = 'Check and classify records received from camera.')
+                       description = 'Check and launch live records from camera.')
     download_records = Jobs(job_name = 'download_records',
                        full_name = 'Download records',
-                       description = 'Download missing records after a service interruption.')
+                       description = 'Archive records to FTP server and remove temporary clips.')
     check_data_plan = Jobs(job_name = 'check_data_plan',
                        full_name = 'Check data plan',
                        description = 'Estimate 4G data plan usage.')
