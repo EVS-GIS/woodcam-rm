@@ -111,7 +111,7 @@ def station(id):
 def stream(id):
     station = get_station(id)
 
-    videos = glob.glob(os.path.join(station.storage_path, '*.mkv'))
+    videos = glob.glob(os.path.join(station.storage_path, '*.avi'))
     
     if videos:
         latest = max(videos, key=os.path.getctime)

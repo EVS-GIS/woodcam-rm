@@ -68,8 +68,8 @@ def hydrodata_update():
 
                 # Check if a threshold is informed for the current month
                 if threshold:
-                    # Check if threshold is triggered
-                    if hydrodata["resultat_obs"] >= threshold:
+                    # Check if threshold is triggered and daymode is 1
+                    if hydrodata["resultat_obs"] >= threshold and st.current_daymode == 1:
                         # Check if the recording mode is not already "high_flow"
                         if st.current_recording.name != "high":
                             change = True
@@ -77,7 +77,6 @@ def hydrodata_update():
                             trigger_time = datetime.now()
 
                         current_recording = "high"
-
                         # Push the recording mode to the MQTT broker
                         if st.mqtt_prefix != None:
                             mqtt.publish(
@@ -86,7 +85,18 @@ def hydrodata_update():
                                 qos=1,
                                 retain=True,
                             )
+                    
+                    # Disable recording at night
+                    elif st.current_daymode == 0:
+                        # Check if the recording mode is not already "no"
+                        if st.current_recording.name != "no":
+                            change = True
+                            # Update recording mode change time
+                            trigger_time = datetime.now()
 
+                        current_recording = "no"
+                    
+                    # If not night and no threshold triggered, set recording to low flow 
                     else:
                         # Check if the recording mode is not already "low_flow"
                         if st.current_recording.name != "low":
@@ -367,7 +377,13 @@ def records_check():
                 )
 
                 r.set(f"station_{st.id}:record_task:id", res.id)
-
+                
+            # Delete RAM files older than 15min              
+            for f in os.listdir(st.storage_path):
+                fpath = os.path.join(st.storage_path, f)
+                if time.time() - os.stat(fpath).st_mtime > (15 * 60):
+                    os.remove(fpath)
+                    
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
         jb.state = "running"
@@ -399,7 +415,6 @@ def download_records():
                 src = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path)
                         if not os.path.isdir(os.path.join(st.storage_path, f)) 
                         and time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime > (10*60)]
-                print(src)
                 
                 if not src:
                     continue
@@ -413,8 +428,8 @@ def download_records():
                     
                     # Concatenate video clips
                     dest = os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mp4")
-                    final = concatenate_videoclips(src_clips)
-                    final.write_videofile(dest)
+                    final = concatenate_videoclips(src_clips, verbose = False)
+                    final.write_videofile(dest, verbose = False)
                     
                     # Connection to archive server
                     with FTP(scheduler.app.config["ARCHIVE_HOST"], 
@@ -453,10 +468,6 @@ def download_records():
                             
                     # Remove temp merged video clips
                     os.remove(dest)
-
-                    # Remove temp video clips
-                    for f in src:
-                        os.remove(f)
                 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
