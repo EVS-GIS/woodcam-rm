@@ -223,7 +223,9 @@ def save_video_file(filepath, rtsp_url, station_id):
         archive_file = os.path.join(filepath, "archives", f"archive_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
         live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))
         
-        live_timeout = time.time() + 60
+        live_timeout = time.time() + 30
+        logger.debug(f"starting {live_file} recording")
+        logger.debug(f"archive file timeout: {datetime.fromtimestamp(live_timeout).strftime('%Y-%m-%d %H:%M:%S')}")
         while time.time() < live_timeout:
             ret, frame = cap.read()
             
@@ -231,14 +233,21 @@ def save_video_file(filepath, rtsp_url, station_id):
                 live_output.write(frame)
                 
             else:
-                r.set(f"station_{station_id}:record_task:status", "error")
-                live_output.release()
-                raise Exception("Stream unreachable!")
+                r.set(f"station_{station_id}:record_task:status", "warning")
+                logger.warning('stream unreachable: trying to restart video capture')
+                
+                try:
+                    cap.release()
+                    cap = cv2.VideoCapture(rtsp_url)
+                except:
+                    live_output.release()
+                    raise Exception("Unable to re-open stream!")
             
+        logger.debug(f"release {live_file}")
         live_output.release()
         shutil.copyfile(live_file, archive_file)
         
-        
+    logger.debug(f"release video capture")
     cap.release()
     r.set(f"station_{station_id}:record_task:status", "success")
     

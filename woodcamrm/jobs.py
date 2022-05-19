@@ -354,7 +354,7 @@ def records_check():
             if record_task:
                 if record_status not in [b"error", b"success"]:
                     if last_record:
-                        if time.time() < float(last_record) + 65:
+                        if time.time() < (float(last_record) + 65):
                             running_task = True
 
             r.set(f"station_{st.id}:record_mode", st.current_recording.name)
@@ -368,9 +368,17 @@ def records_check():
                     )
 
                     r.set(f"station_{st.id}:record_task:id", res.id)
+                    
                 elif st.current_recording.name == "low":
-                    #TODO: launch recording task for low recording mode
-                    pass
+                    if not last_record or time.time() > (float(last_record) + 1800):
+                        res = save_video_file.delay(
+                            filepath=st.storage_path,
+                            rtsp_url=st.rtsp_url,
+                            station_id=st.id,
+                        )
+                        
+                        r.set(f"station_{st.id}:record_task:id", res.id)
+                    
                 else:
                     pass
 
