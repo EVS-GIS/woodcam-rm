@@ -65,8 +65,8 @@ def hydrodata_update():
 
                 # Check if a threshold is informed for the current month
                 if threshold:
-                    # Check if threshold is triggered
-                    if hydrodata["resultat_obs"] >= threshold:
+                    # Check if threshold is triggered and daymode is 1
+                    if hydrodata["resultat_obs"] >= threshold and st.current_daymode == 1:
                         # Check if the recording mode is not already "high_flow"
                         if st.current_recording.name != "high":
                             change = True
@@ -74,7 +74,6 @@ def hydrodata_update():
                             trigger_time = datetime.now()
 
                         current_recording = "high"
-
                         # Push the recording mode to the MQTT broker
                         if st.mqtt_prefix != None:
                             mqtt.publish(
@@ -83,7 +82,18 @@ def hydrodata_update():
                                 qos=1,
                                 retain=True,
                             )
+                    
+                    # Disable recording at night
+                    elif st.current_daymode == 0:
+                        # Check if the recording mode is not already "no"
+                        if st.current_recording.name != "no":
+                            change = True
+                            # Update recording mode change time
+                            trigger_time = datetime.now()
 
+                        current_recording = "no"
+                    
+                    # If not night and no threshold triggered, set recording to low flow 
                     else:
                         # Check if the recording mode is not already "low_flow"
                         if st.current_recording.name != "low":
@@ -359,6 +369,7 @@ def records_check():
 
                     r.set(f"station_{st.id}:record_task:id", res.id)
                 elif st.current_recording.name == "low":
+                    #TODO: launch recording task for low recording mode
                     pass
                 else:
                     pass
@@ -403,6 +414,7 @@ def download_records():
                 continue
             elif not os.listdir(archives_dir):
                 continue
+<<<<<<< HEAD
             
             archives_clips = [os.path.join(archives_dir, f) for f in os.listdir(archives_dir) 
                               if time.time() - os.stat(os.path.join(archives_dir, f)).st_mtime > (5*60)]
@@ -434,6 +446,27 @@ def download_records():
                         ftp.cwd(dir_checked)
                     except error_perm:
                         ftp.mkd(dir_checked)
+=======
+            else:
+                src = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path)
+                        if not os.path.isdir(os.path.join(st.storage_path, f)) 
+                        and time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime > (10*60)]
+                
+                if not src:
+                    continue
+                else:
+                    # Open source video clips
+                    src.sort()
+                    src_clips = [VideoFileClip(f) for f in src]
+                    
+                    if not os.path.isdir(os.path.join(st.storage_path, 'merged_clips')):
+                        os.mkdir(os.path.join(st.storage_path, 'merged_clips'))
+                    
+                    # Concatenate video clips
+                    dest = os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mp4")
+                    final = concatenate_videoclips(src_clips, verbose = False)
+                    final.write_videofile(dest, verbose = False)
+>>>>>>> b031cf4c97ad306be2d347e99a23b910d6c90a3c
                     
                     ftp.cwd('/')
 
@@ -443,7 +476,25 @@ def download_records():
                     with open(clip_file, 'rb') as f:
                         ftp.storbinary('STOR ' + os.path.basename(clip_file), f)
                         
+<<<<<<< HEAD
                     os.remove(clip_file)
+=======
+                        for dir_checked in dirs:
+                            try:
+                                ftp.cwd(dir_checked)
+                            except error_perm:
+                                ftp.mkd(dir_checked)
+                            
+                            ftp.cwd('/')
+
+                        # Send concatenated video clip to archive server
+                        with open(dest, 'rb') as f:
+                            ftp.cwd(dst_path)
+                            ftp.storbinary('STOR ' + os.path.basename(dest), f)
+                            
+                    # Remove temp merged video clips
+                    os.remove(dest)
+>>>>>>> b031cf4c97ad306be2d347e99a23b910d6c90a3c
                 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
