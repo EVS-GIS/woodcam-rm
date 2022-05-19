@@ -2,6 +2,7 @@ import os
 import cv2
 import time
 import redis
+import shutil
 
 from datetime import datetime
 from dotenv import dotenv_values
@@ -11,6 +12,7 @@ from flask import Flask
 from sqlalchemy import exc
 
 from celery import Celery
+from celery.utils.log import get_task_logger
 
 from woodcamrm.extensions import mqtt, dbsql, scheduler, mail, migrate
 from woodcamrm.db import Stations
@@ -126,13 +128,15 @@ def create_app(test_config=None):
 # Celery task definition below
 ####
 
+logger = get_task_logger(__name__)
+
 @celery.task()
 def save_video_file(filepath, rtsp_url, station_id):
     
     r = redis.from_url(dotenv_values()["CELERY_BROKER_URL"])
     recording_mode = r.get(f"station_{station_id}:record_mode")
     
-    print(f"task for station {station_id} in {recording_mode} recording mode")
+    logger.debug(f"task for station {station_id} in {recording_mode} recording mode")
     
     if recording_mode == b'no':
         return 0
@@ -142,6 +146,10 @@ def save_video_file(filepath, rtsp_url, station_id):
     if not os.path.isdir(filepath):
         os.mkdir(filepath)
         
+    if not os.path.isdir(os.path.join(filepath, "archives")):
+        os.mkdir(os.path.join(filepath, "archives"))
+        
+    logger.debug(f"opening {rtsp_url} video capture")
     cap = cv2.VideoCapture(rtsp_url)
     
     # Get current width of frame
@@ -160,48 +168,68 @@ def save_video_file(filepath, rtsp_url, station_id):
         
         # Update redis data
         r.set(f"station_{station_id}:last_record", time.time())
-        r.set(f"station_{station_id}:record_task:status", "pending")
+        r.set(f"station_{station_id}:record_task:status", "recording")
         
         # Define output
-        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_highflow.avi")
-        out = cv2.VideoWriter(filename, fourcc, 3, (int(width),int(height)))
+        archive_file = os.path.join(filepath, "archives", f"archive_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
+        archive_output = cv2.VideoWriter(archive_file, fourcc, 3, (int(width),int(height)))
         
-        timeout = time.time() + 60
-        while time.time() < timeout:
-            ret, frame = cap.read()
+        archive_timeout = time.time() + 600
+        logger.debug(f"starting {archive_file} recording")
+        logger.debug(f"archive file timeout: {datetime.fromtimestamp(archive_timeout).strftime('%Y-%m-%d %H:%M:%S')}")
+        while time.time() < archive_timeout:
             
-            if ret == True:
-                out.write(frame)
+            live_file = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
+            live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))
+            
+            live_timeout = time.time() + 60
+            logger.debug(f"starting {live_file} recording")
+            logger.debug(f"live file timeout: {datetime.fromtimestamp(live_timeout).strftime('%Y-%m-%d %H:%M:%S')}")
+            
+            while time.time() < live_timeout:
+                ret, frame = cap.read()
                 
-            else:
-                r.set(f"station_{station_id}:record_task:status", "error")
-                out.release()
-                raise Exception("Stream unreachable!")
+                if ret == True:
+                    live_output.write(frame)
+                    archive_output.write(frame)
+                    
+                else:
+                    r.set(f"station_{station_id}:record_task:status", "warning")
+                    logger.warning('stream unreachable: skipping frame')
             
-        out.release()
+            logger.debug(f"release {live_file}")
+            live_output.release()
+            r.set(f"station_{station_id}:last_record", time.time())
+        
+        logger.debug(f"release {archive_file}")
+        archive_output.release()
+    
     
     if recording_mode == b"low":
         videos_number+=1
         r.set(f"station_{station_id}:last_record", time.time())
-        r.set(f"station_{station_id}:record_task:status", "pending")
+        r.set(f"station_{station_id}:record_task:status", "recording")
         
         # Define output
-        filename = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}_lowflow.avi")
-        out = cv2.VideoWriter(filename, fourcc, 3, (int(width),int(height)))
+        live_file = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
+        archive_file = os.path.join(filepath, "archives", f"archive_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
+        live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))
         
-        currentFrame = 0
-        while currentFrame < 15:
-            currentFrame += 1
+        live_timeout = time.time() + 60
+        while time.time() < live_timeout:
             ret, frame = cap.read()
             
             if ret == True:
-                out.write(frame)
+                live_output.write(frame)
                 
             else:
                 r.set(f"station_{station_id}:record_task:status", "error")
+                live_output.release()
                 raise Exception("Stream unreachable!")
             
-        out.release()
+        live_output.release()
+        shutil.copyfile(live_file, archive_file)
+        
         
     cap.release()
     r.set(f"station_{station_id}:record_task:status", "success")

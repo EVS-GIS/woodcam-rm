@@ -22,6 +22,5 @@ setup(
         'suntime',
         'celery[redis]',
         'opencv-python-headless',
-        'moviepy'
     ],
 )

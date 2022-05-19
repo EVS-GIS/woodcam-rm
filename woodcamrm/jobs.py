@@ -1,7 +1,5 @@
-from cgi import test
 import os
 import socket
-from threading import current_thread
 import requests
 import redis
 import time
@@ -9,7 +7,6 @@ import time
 from ftplib import FTP, error_perm
 from datetime import datetime
 from suntime import Sun
-from moviepy.editor import VideoFileClip, concatenate_videoclips
 
 from flask import Blueprint, redirect, url_for
 from flask_mail import Message
@@ -343,31 +340,36 @@ def records_check():
             record_status = r.get(f"station_{st.id}:record_task:status")
             record_task = r.get(f"station_{st.id}:record_task:id")
 
-            if record_task and (record_status not in [b"error", b"success"]):
-                running_task = True
-            else:
-                running_task = False
-
-            if (
-                running_task
-                and last_record
-                and time.time() < float(last_record) + (60 * 2)
-            ):
-                pass
-            elif running_task:
-                running_task = False
+            running_task = False
+            if record_task:
+                if record_status not in [b"error", b"success"]:
+                    if last_record:
+                        if time.time() < float(last_record) + 65:
+                            running_task = True
 
             r.set(f"station_{st.id}:record_mode", st.current_recording.name)
 
             if not running_task:
-                res = save_video_file.delay(
-                    filepath=st.storage_path,
-                    rtsp_url=st.rtsp_url,
-                    station_id=st.id,
-                )
+                if st.current_recording.name == "high":
+                    res = save_video_file.delay(
+                        filepath=st.storage_path,
+                        rtsp_url=st.rtsp_url,
+                        station_id=st.id,
+                    )
 
-                r.set(f"station_{st.id}:record_task:id", res.id)
+                    r.set(f"station_{st.id}:record_task:id", res.id)
+                elif st.current_recording.name == "low":
+                    pass
+                else:
+                    pass
 
+            # Remove clips older than 15min
+            old_clips = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path) 
+                         if time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime >= (15*60)]
+            
+            for clip in old_clips:
+                os.remove(clip)
+        
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
         jb.state = "running"
@@ -379,7 +381,7 @@ def records_check():
     id="download_records",
     seconds=600,
     max_instances=1,
-    start_date="2022-01-01 12:00:00",
+    start_date="2022-01-01 12:05:00",
 )
 def download_records():
     with scheduler.app.app_context():
@@ -391,72 +393,57 @@ def download_records():
         stations = Stations.query.filter(Stations.storage_path != None).filter(Stations.rtsp_url != None).all()
         
         for st in stations:
+            
             if not os.path.isdir(st.storage_path):
                 continue
-            elif not os.listdir(st.storage_path):
+            
+            archives_dir = os.path.join(st.storage_path, "archives")
+            
+            if not os.path.isdir(archives_dir):
                 continue
-            else:
-                src = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path)
-                        if not os.path.isdir(os.path.join(st.storage_path, f)) 
-                        and time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime > (10*60)]
-                print(src)
+            elif not os.listdir(archives_dir):
+                continue
+            
+            archives_clips = [os.path.join(archives_dir, f) for f in os.listdir(archives_dir) 
+                              if time.time() - os.stat(os.path.join(archives_dir, f)).st_mtime > (5*60)]
+            
+            # Connection to archive server
+            with FTP(scheduler.app.config["ARCHIVE_HOST"], 
+                        scheduler.app.config["ARCHIVE_USER"], 
+                        scheduler.app.config["ARCHIVE_PASSWORD"]) as ftp:
                 
-                if not src:
-                    continue
-                else:
-                    # Open source video clips
-                    src.sort()
-                    src_clips = [VideoFileClip(f) for f in src]
+                # Create directory if do not exist
+                dst_path = os.path.join(scheduler.app.config["ARCHIVE_PATH"],
+                                        st.common_name, 
+                                        'woodcamrm-archived-clips', 
+                                        datetime.now().strftime('%Y'),
+                                        datetime.now().strftime('%m'),
+                                        datetime.now().strftime('%d')
+                                    )
+                
+                dirs = []
+                testdir = dst_path
+                while testdir != "":
+                    dirs.append(testdir)
+                    testdir = os.path.dirname(testdir)
+                
+                dirs.reverse()
+                
+                for dir_checked in dirs:
+                    try:
+                        ftp.cwd(dir_checked)
+                    except error_perm:
+                        ftp.mkd(dir_checked)
                     
-                    if not os.path.isdir(os.path.join(st.storage_path, 'merged_clips')):
-                        os.mkdir(os.path.join(st.storage_path, 'merged_clips'))
-                    
-                    # Concatenate video clips
-                    dest = os.path.join(st.storage_path, 'merged_clips', f"archive_video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.mp4")
-                    final = concatenate_videoclips(src_clips)
-                    final.write_videofile(dest)
-                    
-                    # Connection to archive server
-                    with FTP(scheduler.app.config["ARCHIVE_HOST"], 
-                             scheduler.app.config["ARCHIVE_USER"], 
-                             scheduler.app.config["ARCHIVE_PASSWORD"]) as ftp:
-                        
-                        # Create directory if do not exist
-                        dst_path = os.path.join(scheduler.app.config["ARCHIVE_PATH"],
-                                                st.common_name, 
-                                                'woodcamrm-archived-clips', 
-                                                datetime.now().strftime('%Y'),
-                                                datetime.now().strftime('%m'),
-                                                datetime.now().strftime('%d')
-                                            )
-                        
-                        dirs = []
-                        testdir = dst_path
-                        while testdir != "":
-                            dirs.append(testdir)
-                            testdir = os.path.dirname(testdir)
-                        
-                        dirs.reverse()
-                        
-                        for dir_checked in dirs:
-                            try:
-                                ftp.cwd(dir_checked)
-                            except error_perm:
-                                ftp.mkd(dir_checked)
-                            
-                            ftp.cwd('/')
+                    ftp.cwd('/')
 
-                        # Send concatenated video clip to archive server
-                        with open(dest, 'rb') as f:
-                            ftp.cwd(dst_path)
-                            ftp.storbinary('STOR ' + os.path.basename(dest), f)
-                            
-                    # Remove temp merged video clips
-                    os.remove(dest)
-
-                    # Remove temp video clips
-                    for f in src:
-                        os.remove(f)
+                # Send archive clips to archive server
+                ftp.cwd(dst_path)
+                for clip_file in archives_clips:
+                    with open(clip_file, 'rb') as f:
+                        ftp.storbinary('STOR ' + os.path.basename(clip_file), f)
+                        
+                    os.remove(clip_file)
                 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()

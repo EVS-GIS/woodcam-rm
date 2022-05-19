@@ -132,6 +132,3 @@ dmypy.json
 
 # Git
 .git/
-
-# Video data files
-data/
