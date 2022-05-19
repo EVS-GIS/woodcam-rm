@@ -195,7 +195,15 @@ def save_video_file(filepath, rtsp_url, station_id):
                     
                 else:
                     r.set(f"station_{station_id}:record_task:status", "warning")
-                    logger.warning('stream unreachable: skipping frame')
+                    logger.warning('stream unreachable: trying to restart video capture')
+                    
+                    try:
+                        cap.release()
+                        cap = cv2.VideoCapture(rtsp_url)
+                    except:
+                        live_output.release()
+                        archive_output.release()
+                        raise Exception("Unable to re-open stream!")
             
             logger.debug(f"release {live_file}")
             live_output.release()
