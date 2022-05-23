@@ -163,7 +163,6 @@ def save_video_file(filepath, rtsp_url, station_id):
     videos_number = 0
     
     while recording_mode == b"high":
-        videos_number+=1
         recording_mode = r.get(f"station_{station_id}:record_mode")
         
         # Update redis data
@@ -178,6 +177,7 @@ def save_video_file(filepath, rtsp_url, station_id):
         logger.debug(f"starting {archive_file} recording")
         logger.debug(f"archive file timeout: {datetime.fromtimestamp(archive_timeout).strftime('%Y-%m-%d %H:%M:%S')}")
         while time.time() < archive_timeout:
+            videos_number+=1
             
             live_file = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
             live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))

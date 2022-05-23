@@ -65,8 +65,8 @@ def hydrodata_update():
 
                 # Check if a threshold is informed for the current month
                 if threshold:
-                    # Check if threshold is triggered and daymode is 1
-                    if hydrodata["resultat_obs"] >= threshold and st.current_daymode == 1:
+                    # Check if threshold is triggered
+                    if hydrodata["resultat_obs"] >= threshold:
                         # Check if the recording mode is not already "high_flow"
                         if st.current_recording.name != "high":
                             change = True
@@ -83,17 +83,7 @@ def hydrodata_update():
                                 retain=True,
                             )
                     
-                    # Disable recording at night
-                    elif st.current_daymode == 0:
-                        # Check if the recording mode is not already "no"
-                        if st.current_recording.name != "no":
-                            change = True
-                            # Update recording mode change time
-                            trigger_time = datetime.now()
-
-                        current_recording = "no"
-                    
-                    # If not night and no threshold triggered, set recording to low flow 
+                    # If no threshold triggered, set recording to low flow 
                     else:
                         # Check if the recording mode is not already "low_flow"
                         if st.current_recording.name != "low":
@@ -357,9 +347,13 @@ def records_check():
                         if time.time() < (float(last_record) + 65):
                             running_task = True
 
-            r.set(f"station_{st.id}:record_mode", st.current_recording.name)
+            # Disable recording at night
+            if st.current_daymode == 1:
+                r.set(f"station_{st.id}:record_mode", st.current_recording.name)
+            else:
+                r.set(f"station_{st.id}:record_mode", "no")
 
-            if not running_task:
+            if not running_task and st.current_daymode == 1:
                 if st.current_recording.name == "high":
                     res = save_video_file.delay(
                         filepath=st.storage_path,
