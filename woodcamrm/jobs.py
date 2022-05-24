@@ -378,7 +378,8 @@ def records_check():
 
             # Remove clips older than 15min
             old_clips = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path) 
-                         if time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime >= (15*60)]
+                         if time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime >= (15*60)
+                         and not os.path.isdir(os.path.join(st.storage_path, f))]
             
             for clip in old_clips:
                 os.remove(clip)
