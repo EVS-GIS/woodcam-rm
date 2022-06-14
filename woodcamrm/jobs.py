@@ -64,7 +64,7 @@ def hydrodata_update():
                 change = False
 
                 # Check if a threshold is informed for the current month
-                if threshold:
+                if threshold is not None:
                     # Check if threshold is triggered
                     if hydrodata["resultat_obs"] >= threshold:
                         # Check if the recording mode is not already "high_flow"
