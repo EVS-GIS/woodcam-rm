@@ -1,0 +1,30 @@
+pg_woodcamrm_stations:
+  master: true
+  query: "SELECT common_name, water_level, last_hydro, current_data, ping_alert, current_daymode FROM stations"
+  metrics:
+    - common_name:
+        usage: "LABEL"
+        description: "Station full name"
+    - water_level:
+        usage: "GAUGE"
+        decription: "Station video water level"
+    - last_hydro:
+        usage: "GAUGE"
+        decription: "Station API water level"
+    - current_data:
+        usage: "GAUGE"
+        description: "Data plan usage"
+    - ping_alert:
+        usage: "COUNTER"
+        description: "Last ping didn't respond"
+    - current_daymode:
+        usage: "GAUGE"
+        description: "Current night/day mode"
+
+pg_woodcamrm_jobs:
+  master: true
+  query: "SELECT job_name FROM jobs"
+  metrics:
+    - job_name:
+        usage: "LABEL"
+        description: "Job identifier"

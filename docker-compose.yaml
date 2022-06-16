@@ -64,7 +64,32 @@ services:
       - ${PWD}/.env:/app/.env
       - video-data:/data
 
+  prometheus:
+    image: prom/prometheus:v2.36.1
+    restart: always
+    ports:
+      - 9090:9090
+    volumes:
+      - prometheus-data:/prometheus
+      - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ${PWD}/prometheus/web.yml:/etc/prometheus/web.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=365d'  
+      - '--web.config.file=/etc/prometheus/web.yml'
+
+  psql-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.10.1
+    restart: always
+    environment:
+      DATA_SOURCE_NAME: ${SQLALCHEMY_DATABASE_URI}?sslmode=disable
+    volumes:
+      - ${PWD}/prometheus/queries.yaml:/etc/queries.yaml
+    command:
+      - '--extend.query-path=/etc/queries.yaml'
+
 volumes:
   db-data:
-  mqtt-data:
+  prometheus-data:
   video-data:

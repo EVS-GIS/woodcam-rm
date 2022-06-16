@@ -3,8 +3,6 @@ WORKDIR /app
 
 COPY . .
 
-# RUN apk add --no-cache gcc libc-dev
-
 RUN pip install -e .
 RUN pip install gunicorn
 

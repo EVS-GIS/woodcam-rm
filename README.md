@@ -84,7 +84,10 @@ sudo systemctl start woodcamrm.service
 
 - Copy the example .env file and make the required configuration changes (database, etc...)
 - Install docker-compose (https://docs.docker.com/compose/install/)
-- Place your mosquitto passwordfile and certs in the mosquitto folder if you have ones. If not, a passwordfile will be created with the password in the .env file. If you prefer to use an externat MQTT broker, comment all the mqtt section in docker-compose.yml.
+
+If you want to use prometheus to historize data and manage alerts:
+- Uncomment the "prometheus" and "psql-exporter" services in the docker-compose.yaml file.
+- Hash a password using https://bcrypt-generator.com/ and copy/paste it to prometheus/web.yml file
 
 ```bash
 # Run containers
