@@ -73,8 +73,8 @@ services:
       - prometheus-data:/prometheus
       - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ${PWD}/prometheus/web.yml:/etc/prometheus/web.yml
-      # - ${PWD}/prometheus/cert.pem:/etc/prometheus/cert.pem
-      # - ${PWD}/prometheus/privkey.pem:/etc/prometheus/privkey.pem
+      - ${PWD}/prometheus/cert.pem:/etc/prometheus/cert.pem
+      - ${PWD}/prometheus/privkey.pem:/etc/prometheus/privkey.pem
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'

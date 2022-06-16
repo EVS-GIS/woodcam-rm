@@ -131,9 +131,7 @@ dmypy.json
 # VSCode settings
 .vscode/
 
-# Mosquitto passwordfile and certs
-mosquitto/passwordfile
-mosquitto/certs/*.pem
-
-# Video data files
-data/
+# Prometheus certificates and passwords
+prometheus/web.yml
+prometheus/cert.pem
+prometheus/privkey.pem
