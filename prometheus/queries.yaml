@@ -1,6 +1,6 @@
 pg_woodcamrm_stations:
   master: true
-  query: "SELECT common_name, water_level, last_hydro, current_data, ping_alert, current_daymode FROM stations"
+  query: "SELECT common_name, water_level, last_hydro, current_data, ping_alert, current_daymode, current_recording FROM stations"
   metrics:
     - common_name:
         usage: "LABEL"
@@ -20,11 +20,17 @@ pg_woodcamrm_stations:
     - current_daymode:
         usage: "GAUGE"
         description: "Current night/day mode"
+    - current_recording:
+        usage: "LABEL"
+        description: "Current recording mode"
 
 pg_woodcamrm_jobs:
   master: true
-  query: "SELECT job_name FROM jobs"
+  query: "SELECT job_name, state FROM jobs"
   metrics:
     - job_name:
         usage: "LABEL"
         description: "Job identifier"
+    - state:
+        usage: "LABEL"
+        description: "Job state"
