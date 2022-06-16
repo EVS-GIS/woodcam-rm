@@ -170,7 +170,7 @@ def check_data_plan():
                 else:
                     to_substract = st.last_data
                     st.last_data = total
-                    total -= to_substract
+                    total = total - to_substract
                     total += st.current_data
 
                 # Mail alert if data limit is soon reached
