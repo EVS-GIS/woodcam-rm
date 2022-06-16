@@ -160,6 +160,9 @@ def check_data_plan():
                 # Convert total from bytes to Mb
                 total = total * 10**-6
                 
+                if not st.last_data:
+                    st.last_data = 0
+                    
                 # If router total data is lower than last value, the router has probably rebooted
                 if total < st.last_data:
                     st.last_data = total    

@@ -2,7 +2,6 @@ version: "3.9"
 services:
   db:
     image: postgis/postgis:13-3.2-alpine
-    restart: always
     environment:
       TZ: $SCHEDULER_TIMEZONE
       POSTGRES_DB: $POSTGRES_DB
@@ -18,7 +17,6 @@ services:
 
   redis:
     image: redis:7.0-rc2-alpine
-    restart: always
     environment:
       TZ: $SCHEDULER_TIMEZONE
       REDIS_PASSWORD: $REDIS_PASSWORD
@@ -39,7 +37,6 @@ services:
 
   app:
     build: .
-    restart: always
     depends_on:
       db:
         condition: service_healthy
@@ -50,11 +47,12 @@ services:
     volumes:
       - ${PWD}/.env:/app/.env
       - video-data:/data
+      - ${PWD}:/app
+    command: flask run --host=0.0.0.0
 
   worker:
     image: woodcam-rm_app:latest
-    restart: always
-    command: celery -A woodcamrm.celery worker --loglevel=info -c 10
+    command: celery -A woodcamrm.celery worker --loglevel=debug -c 10
     depends_on:
       db:
         condition: service_healthy
@@ -63,18 +61,16 @@ services:
     volumes:
       - ${PWD}/.env:/app/.env
       - video-data:/data
+      - ${PWD}:/app
 
   prometheus:
     image: prom/prometheus:v2.36.1
-    restart: always
     ports:
       - 9090:9090
     volumes:
       - prometheus-data:/prometheus
       - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ${PWD}/prometheus/web.yml:/etc/prometheus/web.yml
-      # - ${PWD}/prometheus/cert.pem:/etc/prometheus/cert.pem
-      # - ${PWD}/prometheus/privkey.pem:/etc/prometheus/privkey.pem
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -83,7 +79,6 @@ services:
 
   psql-exporter:
     image: quay.io/prometheuscommunity/postgres-exporter:v0.10.1
-    restart: always
     environment:
       DATA_SOURCE_NAME: ${SQLALCHEMY_DATABASE_URI}?sslmode=disable
     volumes:
@@ -95,3 +90,6 @@ volumes:
   db-data:
   prometheus-data:
   video-data:
+    driver_opts:
+     type: tmpfs
+     device: tmpfs

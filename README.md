@@ -87,6 +87,7 @@ sudo systemctl start woodcamrm.service
 
 If you want to use prometheus to historize data and manage alerts:
 - Uncomment the "prometheus" and "psql-exporter" services in the docker-compose.yaml file.
+- If you want to use TLS encryption, place your cacert.pem and privatekey.pem in prometheus/.
 - Hash a password using https://bcrypt-generator.com/ and copy/paste it to prometheus/web.yml file
 
 ```bash

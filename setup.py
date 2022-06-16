@@ -10,7 +10,6 @@ setup(
         'flask',
         'flask-sqlalchemy',
         'flask-apscheduler',
-        'flask-mqtt',
         'flask-mail',
         'flask-wtf',
         'flask-migrate',
