@@ -131,6 +131,10 @@ dmypy.json
 # VSCode settings
 .vscode/
 
+# Backup script and data
+db-backup.sh
+woodcamrm_db.sql
+
 # Prometheus certificates and passwords
 prometheus/web.yml
 prometheus/cert.pem
