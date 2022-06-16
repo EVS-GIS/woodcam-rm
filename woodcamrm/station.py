@@ -30,7 +30,6 @@ class StationForm(FlaskForm):
     reset_day = IntegerField('4G plan reset day', validators=[Optional()]) 
     phone_number = TelField('Phone number', validators=[Optional()]) 
     ip = StringField('Installation IP', validators=[Optional(), IPAddress()]) 
-    mqtt_prefix = StringField('MQTT prefix', validators=[Optional()])
     storage_path = StringField('Records temp storage path', validators=[Optional()])
     camera_port = IntegerField('Camera ping port', validators=[Optional()])
     installation_port = IntegerField('Installation ping port', validators=[Optional()])

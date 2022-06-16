@@ -52,6 +52,7 @@ class Stations(dbsql.Model):
     phone_number = dbsql.Column(dbsql.String(120))
     monthly_data = dbsql.Column(dbsql.Integer)
     current_data = dbsql.Column(dbsql.Numeric)
+    last_data = dbsql.Column(dbsql.Numeric)
     last_data_check = dbsql.Column(dbsql.DateTime)
     reset_day = dbsql.Column(dbsql.Integer)
     
@@ -59,7 +60,6 @@ class Stations(dbsql.Model):
     camera_port = dbsql.Column(dbsql.Integer)
     installation_port = dbsql.Column(dbsql.Integer)
     
-    mqtt_prefix = dbsql.Column(dbsql.String(120))
     snmp_received = dbsql.Column(dbsql.String(120))
     snmp_transmitted = dbsql.Column(dbsql.String(120))
     

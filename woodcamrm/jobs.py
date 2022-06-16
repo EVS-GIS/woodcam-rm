@@ -15,7 +15,7 @@ from pysnmp.hlapi import *
 
 from woodcamrm import save_video_file
 from woodcamrm.auth import login_required
-from woodcamrm.extensions import scheduler, dbsql, mqtt, mail
+from woodcamrm.extensions import scheduler, dbsql, mail
 from woodcamrm.db import Stations, Jobs, Users
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
@@ -74,14 +74,6 @@ def hydrodata_update():
                             trigger_time = datetime.now()
 
                         current_recording = "high"
-                        # Push the recording mode to the MQTT broker
-                        if st.mqtt_prefix != None:
-                            mqtt.publish(
-                                f"{st.mqtt_prefix}/flow_trigger",
-                                "On",
-                                qos=1,
-                                retain=True,
-                            )
                     
                     # If no threshold triggered, set recording to low flow 
                     else:
@@ -92,15 +84,6 @@ def hydrodata_update():
                             trigger_time = datetime.now()
 
                         current_recording = "low"
-
-                        # Push the recording mode to the MQTT broker
-                        if st.mqtt_prefix != None:
-                            mqtt.publish(
-                                f"{st.mqtt_prefix}/flow_trigger",
-                                "Off",
-                                qos=1,
-                                retain=True,
-                            )
 
                 # Update the stations table in the database
                 st.last_hydro_time = datetime.strptime(
@@ -176,6 +159,16 @@ def check_data_plan():
 
                 # Convert total from bytes to Mb
                 total = total * 10**-6
+                
+                # If router total data is lower than last value, the router has probably rebooted
+                if total < st.last_data:
+                    st.last_data = total    
+                    total += st.current_data
+                else:
+                    to_substract = st.last_data
+                    st.last_data = total
+                    total -= to_substract
+                    total += st.current_data
 
                 # Mail alert if data limit is soon reached
                 if st.monthly_data - total < st.monthly_data * 0.05:
@@ -199,6 +192,7 @@ def check_data_plan():
         jb.state = "running"
         dbsql.session.commit()
 
+#TODO: Task to reset data plan
 
 @scheduler.task(
     "interval",
