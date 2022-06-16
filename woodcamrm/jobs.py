@@ -166,12 +166,12 @@ def check_data_plan():
                 # If router total data is lower than last value, the router has probably rebooted
                 if total < st.last_data:
                     st.last_data = total    
-                    total += st.current_data
+                    total += float(st.current_data)
                 else:
                     to_substract = st.last_data
                     st.last_data = total
-                    total = total - to_substract
-                    total = total + st.current_data
+                    total -= float(to_substract)
+                    total += float(st.current_data)
                     
                 # Mail alert if data limit is soon reached
                 if st.monthly_data - total < st.monthly_data * 0.05:
