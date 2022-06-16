@@ -171,8 +171,8 @@ def check_data_plan():
                     to_substract = st.last_data
                     st.last_data = total
                     total = total - to_substract
-                    total += st.current_data
-
+                    total = total + st.current_data
+                    
                 # Mail alert if data limit is soon reached
                 if st.monthly_data - total < st.monthly_data * 0.05:
                     msg = Message(
