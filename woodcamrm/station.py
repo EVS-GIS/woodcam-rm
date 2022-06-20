@@ -15,7 +15,7 @@ from werkzeug.exceptions import abort
 from sqlalchemy import exc
 
 from woodcamrm.auth import login_required
-from woodcamrm.db import Stations, Jobs
+from woodcamrm.db import RecordMode, Stations, Jobs, JobState
 from woodcamrm.extensions import dbsql, scheduler
 
 bp = Blueprint('station', __name__, url_prefix='/station')
@@ -61,7 +61,9 @@ def index():
     return render_template('station/index.html',
                            stations=stations,
                            selected='dashboard',
-                           jobs=jobs)
+                           jobs=jobs,
+                           JobState=JobState,
+                           RecordMode=RecordMode)
 
 
 @bp.route('/add', methods=('GET', 'POST'))
@@ -102,7 +104,7 @@ def station(id):
     station = get_station(id)
     form = StationForm(obj=station)
 
-    return render_template('station/station.html', station=station, selected=id, form=form)
+    return render_template('station/station.html', station=station, selected=id, form=form, RecordMode=RecordMode)
 
 
 @bp.route("/<int:id>/stream")

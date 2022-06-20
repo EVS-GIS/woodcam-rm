@@ -16,7 +16,7 @@ from pysnmp.hlapi import *
 from woodcamrm import save_video_file
 from woodcamrm.auth import login_required
 from woodcamrm.extensions import scheduler, dbsql, mail
-from woodcamrm.db import Stations, Jobs, Users
+from woodcamrm.db import RecordMode, Stations, Jobs, Users
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 
@@ -33,7 +33,7 @@ def hydrodata_update():
     with scheduler.app.app_context():
         jb = Jobs.query.filter_by(job_name="hydrodata_update").first()
         jb.last_execution = datetime.now()
-        jb.state = "warn"
+        jb.state = 0
         dbsql.session.commit()
         
         stations = Stations.query.all()
@@ -59,7 +59,7 @@ def hydrodata_update():
                 threshold = getattr(st, current_month)
 
                 # Update current_recording mode and lasttime of recording mode change
-                current_recording = "no"
+                current_recording = 0
                 trigger_time = st.last_record_change
                 change = False
 
@@ -68,22 +68,22 @@ def hydrodata_update():
                     # Check if threshold is triggered
                     if hydrodata["resultat_obs"] >= threshold:
                         # Check if the recording mode is not already "high_flow"
-                        if st.current_recording.name != "high":
+                        if st.current_recording != 2:
                             change = True
                             # Update recording mode change time
                             trigger_time = datetime.now()
 
-                        current_recording = "high"
+                        current_recording = 2
                     
                     # If no threshold triggered, set recording to low flow 
                     else:
                         # Check if the recording mode is not already "low_flow"
-                        if st.current_recording.name != "low":
+                        if st.current_recording != 1:
                             change = True
                             # Update recording mode change time
                             trigger_time = datetime.now()
 
-                        current_recording = "low"
+                        current_recording = 1
 
                 # Update the stations table in the database
                 st.last_hydro_time = datetime.strptime(
@@ -96,7 +96,7 @@ def hydrodata_update():
 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
-        jb.state = "running"
+        jb.state = 4
         dbsql.session.commit()
 
 
@@ -112,7 +112,7 @@ def check_data_plan():
     with scheduler.app.app_context():
         jb = Jobs.query.filter_by(job_name="check_data_plan").first()
         jb.last_execution = datetime.now()
-        jb.state = "warn"
+        jb.state = 0
         dbsql.session.commit()
 
         stations = Stations.query.all()
@@ -138,7 +138,7 @@ def check_data_plan():
                     if errorIndication:
                         print(errorIndication)
                         jb.last_execution = datetime.now()
-                        jb.state = "error"
+                        jb.state = 2
                         dbsql.session.commit()
                         return
                     elif errorStatus:
@@ -150,7 +150,7 @@ def check_data_plan():
                             )
                         )
                         jb.last_execution = datetime.now()
-                        jb.state = "error"
+                        jb.state = 2
                         dbsql.session.commit()
                         return
                     else:
@@ -192,7 +192,7 @@ def check_data_plan():
 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
-        jb.state = "running"
+        jb.state = 4
         dbsql.session.commit()
 
 #TODO: Task to reset data plan
@@ -209,7 +209,7 @@ def alive_check():
         stations = Stations.query.filter(Stations.ip != None).all()
         jb = Jobs.query.filter_by(job_name="alive_check").first()
         jb.last_execution = datetime.now()
-        jb.state = "warn"
+        jb.state = 0
         dbsql.session.commit()
 
         for st in stations:
@@ -306,7 +306,7 @@ def alive_check():
 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
-        jb.state = "running"
+        jb.state = 4
         dbsql.session.commit()
 
 
@@ -321,7 +321,7 @@ def records_check():
     with scheduler.app.app_context():
         jb = Jobs.query.filter_by(job_name="records_check").first()
         jb.last_execution = datetime.now()
-        jb.state = "warn"
+        jb.state = 0
         dbsql.session.commit()
         
         r = redis.from_url(scheduler.app.config["CELERY_BROKER_URL"])
@@ -346,12 +346,12 @@ def records_check():
 
             # Disable recording at night
             if st.current_daymode == 1:
-                r.set(f"station_{st.id}:record_mode", st.current_recording.name)
+                r.set(f"station_{st.id}:record_mode", RecordMode(st.current_recording).name)
             else:
                 r.set(f"station_{st.id}:record_mode", "no")
 
             if not running_task and st.current_daymode == 1:
-                if st.current_recording.name == "high":
+                if st.current_recording == 2:
                     res = save_video_file.delay(
                         filepath=st.storage_path,
                         rtsp_url=st.rtsp_url,
@@ -360,7 +360,7 @@ def records_check():
 
                     r.set(f"station_{st.id}:record_task:id", res.id)
                     
-                elif st.current_recording.name == "low":
+                elif st.current_recording == 1:
                     if not last_record or time.time() > (float(last_record) + 1800):
                         res = save_video_file.delay(
                             filepath=st.storage_path,
@@ -383,7 +383,7 @@ def records_check():
         
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
-        jb.state = "running"
+        jb.state = 4
         dbsql.session.commit()
 
 
@@ -398,7 +398,7 @@ def download_records():
     with scheduler.app.app_context():
         jb = Jobs.query.filter_by(job_name="download_records").first()
         jb.last_execution = datetime.now()
-        jb.state = "warn"
+        jb.state = 0
         dbsql.session.commit()
         
         stations = Stations.query.filter(Stations.storage_path != None).filter(Stations.rtsp_url != None).all()
@@ -458,7 +458,7 @@ def download_records():
                 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
-        jb.state = "running"
+        jb.state = 4
         dbsql.session.commit()
         
         
@@ -493,7 +493,7 @@ def manual_resume(job):
     scheduler.get_job(id=job).resume()
 
     jb = Jobs.query.filter_by(job_name=job).first()
-    jb.state = "running"
+    jb.state = 4
     dbsql.session.commit()
 
     return redirect(url_for("station.index"))

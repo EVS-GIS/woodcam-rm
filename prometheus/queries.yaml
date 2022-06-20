@@ -21,7 +21,7 @@ pg_woodcamrm_stations:
         usage: "GAUGE"
         description: "Current night/day mode"
     - current_recording:
-        usage: "LABEL"
+        usage: "GAUGE"
         description: "Current recording mode"
 
 pg_woodcamrm_jobs:
@@ -32,5 +32,5 @@ pg_woodcamrm_jobs:
         usage: "LABEL"
         description: "Job identifier"
     - state:
-        usage: "LABEL"
+        usage: "GAUGE"
         description: "Job state"

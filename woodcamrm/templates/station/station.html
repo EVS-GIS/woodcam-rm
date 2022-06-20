@@ -40,7 +40,7 @@
                     </tr>
                     <tr>
                         <th scope="row">Current recording mode</th>
-                        <td>{{ station.current_recording.value }}
+                        <td>{{ RecordMode(station.current_recording).name }}
                             {%if station.current_daymode == 1%}<span class="iconify" data-icon="emojione:sun">day mode</span>
                             {%elif station.current_daymode == 0%}<span class="iconify" data-icon="bi:moon-fill">night
                                 mode</span>

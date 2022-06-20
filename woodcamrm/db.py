@@ -14,19 +14,20 @@ from woodcamrm.extensions import dbsql
 class Role(enum.Enum):
     admin = "Administrator"
     viewer = "Viewer"
-    
+
 
 class JobState(enum.Enum):
-    running = 'Running' 
-    warn = "Warning"
-    error = 'Error'
-    stopped = 'Stopped'
+    running = 0
+    warn = 1
+    error = 2
+    stopped = 3
+    pending = 4
     
-
+    
 class RecordMode(enum.Enum):
-    high = "High flow" 
-    low = "Low flow"
-    no = "Not recording"
+    no = 0
+    low = 1
+    high = 2 
     
     
 class Users(dbsql.Model):
@@ -70,7 +71,7 @@ class Stations(dbsql.Model):
     last_hydro = dbsql.Column(dbsql.Numeric)
     water_level = dbsql.Column(dbsql.Numeric)
     
-    current_recording = dbsql.Column(dbsql.Enum(RecordMode), default="no")
+    current_recording = dbsql.Column(dbsql.Integer, default=2)
     last_record_change = dbsql.Column(dbsql.DateTime, default=func.now())
     storage_path = dbsql.Column(dbsql.String(120))
     
@@ -105,7 +106,7 @@ class Jobs(dbsql.Model):
     full_name = dbsql.Column(dbsql.String, nullable=False)
     description = dbsql.Column(dbsql.String)
     last_execution = dbsql.Column(dbsql.DateTime)
-    state = dbsql.Column(dbsql.Enum(JobState), nullable=False, default='warn')
+    state = dbsql.Column(dbsql.Integer, default=1)
     message = dbsql.Column(dbsql.String)
     
     def __repr__(self):

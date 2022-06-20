@@ -14,19 +14,20 @@
             </div>
             <div class="card-footer">
                 <a href="{{ url_for('jobs.manual_run', job=jb.job_name) }}" class="btn btn-outline-success">Run job now</a>
-                {%if jb.state.name == 'stopped'%}
+                {%if JobState(jb.state).name == 'stopped'%}
                 <a href="{{ url_for('jobs.manual_resume', job=jb.job_name) }}" class="btn btn-outline-warning">Resume job</a>
                 {%else%}
                 <a href="{{ url_for('jobs.manual_stop', job=jb.job_name) }}" class="btn btn-outline-info">Stop job</a>
                 {%endif%}
             </div>
-            <div class="card-footer {%if jb.state.name == 'stopped'%}bg-info
-                                    {%elif jb.state.name == 'running'%}bg-success
-                                    {%elif jb.state.name == 'warn'%}bg-warning
-                                    {%elif jb.state.name == 'error'%}bg-danger
+            <div class="card-footer {%if JobState(jb.state).name == 'stopped'%}bg-info
+                                    {%elif JobState(jb.state).name == 'running'%}bg-primary
+                                    {%elif JobState(jb.state).name == 'pending'%}bg-success
+                                    {%elif JobState(jb.state).name == 'warn'%}bg-warning
+                                    {%elif JobState(jb.state).name == 'error'%}bg-danger
                                     {%endif%}">
                 <small class="text">
-                    job state: {{jb.state.value}} <br>
+                    job state: {{JobState(jb.state).name}} <br>
                     last execution: {% if jb.last_execution %}{{ jb.last_execution.strftime('%Y-%m-%d %H:%M:%S') }}
                     {% else %}never{%endif%}
                 </small>
@@ -64,7 +65,7 @@
                           </tr>
                         <tr>
                             <th scope="row">Current recording mode</th>
-                            <td>{{ st.current_recording.value }} 
+                            <td>{{ RecordMode(st.current_recording).name }} 
                                 {%if st.current_daymode == 1%}<span class="iconify" data-icon="emojione:sun">day mode</span>
                                 {%elif st.current_daymode == 0%}<span class="iconify" data-icon="bi:moon-fill">night mode</span>
                                 {%endif%}</td>
