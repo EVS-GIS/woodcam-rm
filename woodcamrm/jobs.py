@@ -183,7 +183,7 @@ def check_data_plan():
                     for user in Users.query.filter_by(notify=True).all():
                         msg.add_recipient(user.email)
 
-                    mail.send(msg)
+                    # mail.send(msg)
 
                 # Update stations table on the database
                 st.current_data = total
@@ -237,7 +237,7 @@ def alive_check():
                     for user in Users.query.filter_by(notify=True).all():
                         msg.add_recipient(user.email)
 
-                    mail.send(msg)
+                    # mail.send(msg)
 
                     st.ping_alert = False
                     st.last_ping = datetime.now()
@@ -266,7 +266,7 @@ def alive_check():
                     for user in Users.query.filter_by(notify=True).all():
                         msg.add_recipient(user.email)
 
-                    mail.send(msg)
+                    # mail.send(msg)
 
                     st.ping_alert = True
 
@@ -279,7 +279,7 @@ def alive_check():
                     for user in Users.query.filter_by(notify=True).all():
                         msg.add_recipient(user.email)
 
-                    mail.send(msg)
+                    # mail.send(msg)
 
                     st.ping_alert = True
 
