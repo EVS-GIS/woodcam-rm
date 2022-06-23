@@ -75,6 +75,7 @@ services:
       - ${PWD}/prometheus/web.yml:/etc/prometheus/web.yml
       - ${PWD}/prometheus/cert.pem:/etc/prometheus/cert.pem
       - ${PWD}/prometheus/privkey.pem:/etc/prometheus/privkey.pem
+      - ${PWD}/prometheus/camera_targets.json:/etc/prometheus/camera_targets.json
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
