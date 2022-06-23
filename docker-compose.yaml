@@ -82,7 +82,7 @@ services:
       - '--web.config.file=/etc/prometheus/web.yml'
 
   psql-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.10.1
+    image: prometheuscommunity/postgres-exporter:v0.10.1
     restart: always
     environment:
       DATA_SOURCE_NAME: ${SQLALCHEMY_DATABASE_URI}?sslmode=disable
@@ -90,6 +90,10 @@ services:
       - ${PWD}/prometheus/queries.yaml:/etc/queries.yaml
     command:
       - '--extend.query-path=/etc/queries.yaml'
+
+  snmp-exporter:
+    image: prom/snmp-exporter:v0.20.0
+    restart: always
 
 volumes:
   db-data:

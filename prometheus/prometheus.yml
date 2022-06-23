@@ -13,7 +13,7 @@ alerting:
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-  # - "first_rules.yml"
+  # - /etc/prometheus/rules/stations_alerts.yml
   # - "second_rules.yml"
 
 # A scrape configuration containing exactly one endpoint to scrape:
@@ -32,3 +32,20 @@ scrape_configs:
 
     static_configs:
       - targets: ["psql-exporter:9187"]
+
+  - job_name: "cameras"
+
+    file_sd_configs:
+    - files:
+      - '/etc/prometheus/camera_targets.json'
+    
+    metrics_path: /snmp
+    params:
+      module: [if_mib]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: snmp-exporter:9116

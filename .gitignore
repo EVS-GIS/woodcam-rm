@@ -135,7 +135,8 @@ dmypy.json
 db-backup.sh
 woodcamrm_db.sql
 
-# Prometheus certificates and passwords
+# Prometheus certificates, passwords and configurations
 prometheus/web.yml
 prometheus/cert.pem
 prometheus/privkey.pem
+prometheus/camera_targets.json
