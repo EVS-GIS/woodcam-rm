@@ -1,0 +1,16 @@
+[
+  {
+    "targets": [ "10.8.0.9:8080" ],
+    "labels": {
+      "common_name": "Arve-Arthaz",
+      "hardware": "camera"
+    }
+  },
+  {
+    "targets": [ "10.8.0.9:443" ],
+    "labels": {
+      "common_name": "Arve-Arthaz",
+      "hardware": "router"
+    }
+  }
+] 

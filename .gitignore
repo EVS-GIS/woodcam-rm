@@ -139,4 +139,5 @@ woodcamrm_db.sql
 prometheus/web.yml
 prometheus/cert.pem
 prometheus/privkey.pem
-prometheus/camera_targets.json
+prometheus/snmp_targets.json
+prometheus/ping_targets.json

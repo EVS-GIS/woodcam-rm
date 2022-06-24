@@ -69,10 +69,7 @@ services:
       - 9090:9090
     volumes:
       - prometheus-data:/prometheus
-      - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ${PWD}/prometheus/web.yml:/etc/prometheus/web.yml
-      - ${PWD}/prometheus/camera_targets.json:/etc/prometheus/camera_targets.json
-      # - ${PWD}/prometheus/rules:/etc/prometheus/rules/
+      - ${PWD}/prometheus:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -89,12 +86,23 @@ services:
     environment:
       DATA_SOURCE_NAME: ${SQLALCHEMY_DATABASE_URI}?sslmode=disable
     volumes:
-      - ${PWD}/prometheus/queries.yaml:/etc/queries.yaml
+      - ${PWD}/prometheus:/etc/prometheus
     command:
-      - '--extend.query-path=/etc/queries.yaml'
+      - '--extend.query-path=/etc/prometheus/queries.yaml'
 
   snmp-exporter:
     image: prom/snmp-exporter:v0.20.0
+    ports:
+      - 9116:9116
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.21.1
+    volumes:
+      - ${PWD}/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/blackbox.yml'
+    ports:
+      - 9115:9115
 
 volumes:
   db-data:

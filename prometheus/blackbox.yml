@@ -1,0 +1,4 @@
+modules:
+  tcp_ping:
+    prober: tcp
+    timeout: 10s
