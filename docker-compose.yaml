@@ -71,11 +71,7 @@ services:
       - 9090:9090
     volumes:
       - prometheus-data:/prometheus
-      - ${PWD}/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ${PWD}/prometheus/web.yml:/etc/prometheus/web.yml
-      - ${PWD}/prometheus/cert.pem:/etc/prometheus/cert.pem
-      - ${PWD}/prometheus/privkey.pem:/etc/prometheus/privkey.pem
-      - ${PWD}/prometheus/camera_targets.json:/etc/prometheus/camera_targets.json
+      - ${PWD}/prometheus:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -88,7 +84,7 @@ services:
     environment:
       DATA_SOURCE_NAME: ${SQLALCHEMY_DATABASE_URI}?sslmode=disable
     volumes:
-      - ${PWD}/prometheus/queries.yaml:/etc/queries.yaml
+      - ${PWD}/prometheus:/etc/prometheus
     command:
       - '--extend.query-path=/etc/queries.yaml'
 
