@@ -86,7 +86,7 @@ services:
     volumes:
       - ${PWD}/prometheus:/etc/prometheus
     command:
-      - '--extend.query-path=/etc/queries.yaml'
+      - '--extend.query-path=/etc/prometheus/queries.yaml'
 
   snmp-exporter:
     image: prom/snmp-exporter:v0.20.0
