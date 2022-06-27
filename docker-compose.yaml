@@ -96,6 +96,14 @@ services:
     image: prom/snmp-exporter:v0.20.0
     restart: always
 
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.21.1
+    restart: always
+    volumes:
+      - ${PWD}/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/blackbox.yml'
+
 volumes:
   db-data:
   prometheus-data:
