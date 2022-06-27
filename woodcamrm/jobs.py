@@ -52,7 +52,17 @@ def hydrodata_update():
                         "size": 1,
                     },
                 )
-                hydrodata = rep.json()["data"][0]
+                
+                try:
+                    hydrodata = rep.json()["data"][0]
+                except requests.JSONDecodeError:
+                    jb.state = 1
+                    jb.message = f'Bad API response for station {st.common_name}'
+                    continue
+                except IndexError:
+                    jb.state = 1
+                    jb.message = f'Empty API response for station {st.common_name}'
+                    continue
 
                 # Retrieve trigger threshold for the current month
                 current_month = datetime.now().strftime("%B").lower()[:3] + "_threshold"
@@ -96,7 +106,9 @@ def hydrodata_update():
 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
-        jb.state = 4
+        if jb.state == 0:
+            jb.state = 4
+            jb.message = 'running'
         dbsql.session.commit()
 
 
@@ -119,7 +131,7 @@ def check_data_plan():
         
         for st in stations:
             # Check if station IP is informed
-            if st.ip and (st.snmp_received or st.snmp_transmitted):
+            if st.ip and (st.snmp_received or st.snmp_transmitted) and not st.ping_alert:
                 total = 0
 
                 # Loop over the two OIDs (transmitted and received)
@@ -138,9 +150,9 @@ def check_data_plan():
                     if errorIndication:
                         print(errorIndication)
                         jb.last_execution = datetime.now()
-                        jb.state = 2
+                        jb.state = 1
                         dbsql.session.commit()
-                        return
+                        continue
                     elif errorStatus:
                         print(
                             "%s at %s"
@@ -150,9 +162,9 @@ def check_data_plan():
                             )
                         )
                         jb.last_execution = datetime.now()
-                        jb.state = 2
+                        jb.state = 1
                         dbsql.session.commit()
-                        return
+                        continue
                     else:
                         # Add value to total
                         total += int(varBinds[0][1])
@@ -192,7 +204,9 @@ def check_data_plan():
 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
-        jb.state = 4
+        if jb.state == 0:
+            jb.state = 4
+            jb.message = 'running'
         dbsql.session.commit()
 
 #TODO: Task to reset data plan
