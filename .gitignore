@@ -137,6 +137,7 @@ woodcamrm_db.sql
 
 # Prometheus certificates, passwords and configurations
 prometheus/web.yml
+prometheus/alertmanager.yml
 prometheus/cert.pem
 prometheus/privkey.pem
 prometheus/snmp_targets.json
