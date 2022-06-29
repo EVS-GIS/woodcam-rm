@@ -3,6 +3,7 @@ import socket
 import requests
 import redis
 import time
+import json
 
 from ftplib import FTP, error_perm
 from datetime import datetime
@@ -225,80 +226,37 @@ def alive_check():
         jb.last_execution = datetime.now()
         jb.state = 0
         dbsql.session.commit()
-
+        
+        output_ping_targets = []
+        output_snmp_targets = []
+            
         for st in stations:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(10)
 
-            # First, try to ping camera
+            # Try to ping camera or installation
+            if st.camera_port:
+                ping_port = st.camera_port
+            elif st.installation_port:
+                ping_port = st.installation_port
+            else:
+                ping_port = 80
+                
             try:
-                if not st.camera_port:
-                    st.camera_port = 80
-
-                s.connect((st.ip, int(st.camera_port)))
+                s.connect((st.ip, int(ping_port)))
                 s.shutdown(2)
                 response = True
             except:
                 response = False
 
             if response:
-                if st.ping_alert:
-                    msg = Message(
-                        f"[woodcam-rm] Station {st.common_name} OK",
-                        body=f"Station {st.common_name} unreachable from {st.last_ping} to {datetime.now()}.",
-                    )
-
-                    for user in Users.query.filter_by(notify=True).all():
-                        msg.add_recipient(user.email)
-
-                    # mail.send(msg)
-
-                    st.ping_alert = False
-                    st.last_ping = datetime.now()
-
-                else:
-                    st.last_ping = datetime.now()
-
-            elif not st.ping_alert:
-                # If camera does not respond, try to ping installation
-                try:
-                    if not st.installation_port:
-                        st.installation_port = 80
-
-                    s.connect((st.ip, int(st.installation_port)))
-                    s.shutdown(2)
-                    reponse_install = True
-                except:
-                    reponse_install = False
-
-                if not reponse_install:
-                    msg = Message(
-                        f"[woodcam-rm] Alert on station {st.common_name}",
-                        body=f"Station {st.common_name}: full installation unreachable since {st.last_ping}.",
-                    )
-
-                    for user in Users.query.filter_by(notify=True).all():
-                        msg.add_recipient(user.email)
-
-                    # mail.send(msg)
-
-                    st.ping_alert = True
-
-                else:
-                    msg = Message(
-                        f"[woodcam-rm] Alert on station {st.common_name}",
-                        body=f"!Critical alert! Station {st.common_name}: camera unreachable since {st.last_ping}. Installation steel reachable.",
-                    )
-
-                    for user in Users.query.filter_by(notify=True).all():
-                        msg.add_recipient(user.email)
-
-                    # mail.send(msg)
-
-                    st.ping_alert = True
-
-            # If all ping are ok, update daymode
-            if not st.ping_alert and st.long and st.lat:
+                st.ping_alert = False
+                st.last_ping = datetime.now()    
+            else:
+                st.ping_alert = True
+                    
+            # If coordinates are set, update daymode
+            if st.long and st.lat:
 
                 sun = Sun(lat=float(st.lat), lon=float(st.long))
                 sunrise = sun.get_local_sunrise_time()
@@ -317,7 +275,52 @@ def alive_check():
                     st.current_daymode = 1
 
                 dbsql.session.commit()
+                
+            # Add entry for ping_targets.json file
+            output_ping_targets.append(
+                {
+                    'targets': [f'{st.ip}:{st.camera_port}'], 
+                    'labels': {'common_name': f'{st.common_name}', 'hardware': 'camera'}
+                })
+            output_ping_targets.append(
+                {
+                    'targets': [f'{st.ip}:{st.installation_port}'], 
+                    'labels': {'common_name': f'{st.common_name}', 'hardware': 'router'}
+                })
+            
+            # Add entry for snmp_targets.json file
+            if st.snmp_monitoring:
+                output_snmp_targets.append(
+                    {
+                        'targets': [f'{st.ip}'], 
+                        'labels': {'common_name': f'{st.common_name}'}
+                    })
+            
 
+        # Check if ping_targets.json have changed
+        if os.path.isfile('./prometheus/ping_targets.json'):
+            with open('./prometheus/ping_targets.json', 'r') as file:
+                ping_targets = json.load(file)
+        else:
+            ping_targets = []
+        
+        if ping_targets != output_ping_targets:
+            with open('./prometheus/ping_targets.json', 'w') as file:
+                json.dump(output_ping_targets, file)
+                
+        
+        # Check if snmp_targets.json have changed
+        if os.path.isfile('./prometheus/snmp_targets.json'):
+            with open('./prometheus/snmp_targets.json', 'r') as file:
+                snmp_targets = json.load(file)
+        else:
+            snmp_targets = []
+        
+        if snmp_targets != output_snmp_targets:
+            with open('./prometheus/snmp_targets.json', 'w') as file:
+                json.dump(output_snmp_targets, file)
+                
+        
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
         jb.state = 4
@@ -495,7 +498,7 @@ def manual_stop(job):
 
     with scheduler.app.app_context():
         jb = Jobs.query.filter_by(job_name=job).first()
-        jb.state = "stopped"
+        jb.state = 3
         dbsql.session.commit()
 
     return redirect(url_for("station.index"))

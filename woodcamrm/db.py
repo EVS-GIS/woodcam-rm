@@ -61,6 +61,7 @@ class Stations(dbsql.Model):
     camera_port = dbsql.Column(dbsql.Integer)
     installation_port = dbsql.Column(dbsql.Integer)
     
+    snmp_monitoring = dbsql.Column(dbsql.Boolean, nullable=False, default=False)
     snmp_received = dbsql.Column(dbsql.String(120))
     snmp_transmitted = dbsql.Column(dbsql.String(120))
     
