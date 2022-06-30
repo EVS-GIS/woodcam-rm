@@ -84,9 +84,7 @@ sudo systemctl start woodcamrm.service
 
 - Copy the example .env file and make the required configuration changes (database, etc...)
 - Install docker-compose (https://docs.docker.com/compose/install/)
-- Copy prometheus/web.yml.example to prometheus/web.yml
-- If you want to use TLS encryption, place your cacert.pem and privatekey.pem in prometheus/.
-- Hash a password using https://bcrypt-generator.com/ and copy/paste it to prometheus/web.yml file
+- If you want to use TLS encryption, place your cacert.pem and privatekey.pem in ./prometheus.
 
 ```bash
 # Run containers

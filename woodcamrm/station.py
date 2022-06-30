@@ -8,7 +8,7 @@ from flask import (
     Blueprint, redirect, render_template, url_for, Response
 )
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, DecimalField, TelField, SelectField, FileField
+from wtforms import StringField, IntegerField, DecimalField, TelField, BooleanField
 from wtforms.validators import DataRequired, Optional, IPAddress
 
 from werkzeug.exceptions import abort
@@ -33,6 +33,7 @@ class StationForm(FlaskForm):
     storage_path = StringField('Records temp storage path', validators=[Optional()])
     camera_port = IntegerField('Camera ping port', validators=[Optional()])
     installation_port = IntegerField('Installation ping port', validators=[Optional()])
+    snmp_monitoring = BooleanField('Enable SNMP Monitoring', validators=[Optional()])
     snmp_received = StringField('SNMP MIB for received data', validators=[Optional()])
     snmp_transmitted = StringField('SNMP MIB for transmitted data', validators=[Optional()])
     
