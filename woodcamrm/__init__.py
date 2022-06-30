@@ -7,7 +7,8 @@ import shutil
 from datetime import datetime
 from dotenv import dotenv_values
 
-from flask import Flask
+from flask import Flask, Blueprint
+from flask_restx import Api
 
 from sqlalchemy import exc
 
@@ -21,6 +22,8 @@ from woodcamrm.db import Stations
 celery = Celery(__name__, 
                 backend=dotenv_values()["CELERY_RESULT_BACKEND"],
                 broker=dotenv_values()["CELERY_BROKER_URL"])
+api_bp = Blueprint('api', __name__)
+api = Api(api_bp)
 
 
 def create_app(test_config=None):
@@ -63,6 +66,10 @@ def create_app(test_config=None):
     
     # Mailing system
     mail.init_app(app)
+    
+    # API    
+    app.register_blueprint(api_bp, url_prefix='/api/v1')
+    from . import api_endpoints
     
     # APScheluder and Celery for CRON jobs
     scheduler.api_enabled = False
