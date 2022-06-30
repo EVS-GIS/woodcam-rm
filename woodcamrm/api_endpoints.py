@@ -12,4 +12,6 @@ class DataRecovery(Resource):
         api.abort(403)
         
     def post(self, station, from_ts, to_ts):
-        return {'hello': 'world'}
+        return {'station': station,
+                'from_ts': from_ts,
+                'to_ts': to_ts}

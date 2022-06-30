@@ -13,7 +13,7 @@ alerting:
 
 # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
 rule_files:
-  # - /etc/prometheus/stations_alerts.yml
+  - /etc/prometheus/stations_alerts.yml
   # - /etc/prometheus/jobs_alerts.yml
   # - /etc/prometheus/records_alerts.yml
 

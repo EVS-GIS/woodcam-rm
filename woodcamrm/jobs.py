@@ -10,13 +10,12 @@ from datetime import datetime
 from suntime import Sun
 
 from flask import Blueprint, redirect, url_for
-from flask_mail import Message
 
 from pysnmp.hlapi import *
 
 from woodcamrm import save_video_file
 from woodcamrm.auth import login_required
-from woodcamrm.extensions import scheduler, dbsql, mail
+from woodcamrm.extensions import scheduler, dbsql
 from woodcamrm.db import RecordMode, Stations, Jobs, Users
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
@@ -185,18 +184,6 @@ def check_data_plan():
                     st.last_data = total
                     total -= float(to_substract)
                     total += float(st.current_data)
-                    
-                # Mail alert if data limit is soon reached
-                if st.monthly_data - total < st.monthly_data * 0.05:
-                    msg = Message(
-                        f"[woodcam-rm] Alert on station {st.common_name}",
-                        body=f"The data consumtion of station {st.common_name} reached {total} over the {st.monthly_data} available.",
-                    )
-
-                    for user in Users.query.filter_by(notify=True).all():
-                        msg.add_recipient(user.email)
-
-                    # mail.send(msg)
 
                 # Update stations table on the database
                 st.current_data = total

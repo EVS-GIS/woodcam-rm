@@ -93,6 +93,8 @@ services:
       - ./prometheus:/etc/prometheus
     command:
       - '--extend.query-path=/etc/prometheus/queries.yaml'
+    ports:
+      - 9187:9187
 
   snmp-exporter:
     image: prom/snmp-exporter:v0.20.0

@@ -50,6 +50,7 @@ services:
     volumes:
       - ${PWD}/.env:/app/.env
       - video-data:/data
+      - ${PWD}/prometheus:/app/prometheus
 
   worker:
     image: woodcam-rm_app:latest
@@ -77,6 +78,14 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=365d'  
       - '--web.config.file=/etc/prometheus/web.yml'
+
+  alertmanager:
+    image: prom/alertmanager:v0.24.0
+    restart: always
+    volumes:
+      - ${PWD}/prometheus:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/alertmanager.yml'
 
   psql-exporter:
     image: prometheuscommunity/postgres-exporter:v0.10.1
