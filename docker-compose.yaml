@@ -86,6 +86,7 @@ services:
       - prometheus-config:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/alertmanager.yml'
+      - '--web.external-url=https://${APP_URL}:9090'
 
   psql-exporter:
     image: prometheuscommunity/postgres-exporter:v0.10.1
@@ -100,6 +101,10 @@ services:
   snmp-exporter:
     image: prom/snmp-exporter:v0.20.0
     restart: always
+    volumes:
+      - prometheus-config:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/snmp.yml'
 
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.21.1

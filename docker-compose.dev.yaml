@@ -99,6 +99,10 @@ services:
 
   snmp-exporter:
     image: prom/snmp-exporter:v0.20.0
+    volumes:
+      - prometheus-config:/etc/prometheus
+    command:
+      - '--config.file=/etc/prometheus/snmp.yml'
     ports:
       - 9116:9116
 
