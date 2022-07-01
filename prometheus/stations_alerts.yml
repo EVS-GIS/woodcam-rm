@@ -2,7 +2,7 @@ groups:
 - name: stations-alerts
   rules:
   - alert: ConnectionUnstable
-    expr: probe_success{hardware="router", job="stations_ping"} < bool 1 or changes(probe_success{hardware="router", job="stations_ping"}[30m]) >= bool 5
+    expr: probe_success{hardware="router", job="stations_ping"} < 1 or changes(probe_success{hardware="router", job="stations_ping"}[30m]) >= 5
     for: 5m
     labels:
       app: woodcam-rm
@@ -11,7 +11,7 @@ groups:
       description: 'Station {{ $labels.common_name }} - connection unstable'
       summary: 'The connection between WoodCam RM and the installation {{ $labels.common_name }} is unstable. Data recovery should be planned.'
   - alert: HighDataUsage
-    expr: sum by (common_name) (increase(ifHCInOctets{ifName='tun1'}[31d])+increase(ifHCOutOctets{ifName='tun1'}[31d])) < bool avg by (common_name) (last_over_time(pg_woodcamrm_stations_monthly_data[31d])) * 0.90
+    expr: sum by (common_name) (increase(ifHCInOctets{ifName='tun1'}[31d])+increase(ifHCOutOctets{ifName='tun1'}[31d])) > avg by (common_name) (last_over_time(pg_woodcamrm_stations_monthly_data[31d])) * 900000
     for: 30s
     labels:
       app: woodcam-rm
