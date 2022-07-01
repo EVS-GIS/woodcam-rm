@@ -50,7 +50,7 @@ services:
     volumes:
       - ${PWD}/.env:/app/.env
       - video-data:/data
-      - ${PWD}/prometheus:/app/prometheus
+      - prometheus-config:/etc/prometheus
 
   worker:
     image: woodcam-rm_app:latest
@@ -72,7 +72,7 @@ services:
       - 9090:9090
     volumes:
       - prometheus-data:/prometheus
-      - ${PWD}/prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -83,7 +83,7 @@ services:
     image: prom/alertmanager:v0.24.0
     restart: always
     volumes:
-      - ${PWD}/prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/alertmanager.yml'
 
@@ -93,7 +93,7 @@ services:
     environment:
       DATA_SOURCE_NAME: ${SQLALCHEMY_DATABASE_URI}?sslmode=disable
     volumes:
-      - ${PWD}/prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--extend.query-path=/etc/prometheus/queries.yaml'
 
@@ -105,11 +105,12 @@ services:
     image: prom/blackbox-exporter:v0.21.1
     restart: always
     volumes:
-      - ${PWD}/prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/blackbox.yml'
 
 volumes:
   db-data:
   prometheus-data:
+  prometheus-config:
   video-data:

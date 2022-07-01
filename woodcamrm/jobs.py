@@ -285,26 +285,26 @@ def alive_check():
             
 
         # Check if ping_targets.json have changed
-        if os.path.isfile('./prometheus/ping_targets.json'):
-            with open('./prometheus/ping_targets.json', 'r') as file:
+        if os.path.isfile('/etc/prometheus/ping_targets.json'):
+            with open('/etc/prometheus/ping_targets.json', 'r') as file:
                 ping_targets = json.load(file)
         else:
             ping_targets = []
         
         if ping_targets != output_ping_targets:
-            with open('./prometheus/ping_targets.json', 'w') as file:
+            with open('/etc/prometheus/ping_targets.json', 'w') as file:
                 json.dump(output_ping_targets, file)
                 
         
         # Check if snmp_targets.json have changed
-        if os.path.isfile('./prometheus/snmp_targets.json'):
-            with open('./prometheus/snmp_targets.json', 'r') as file:
+        if os.path.isfile('/etc/prometheus/snmp_targets.json'):
+            with open('/etc/prometheus/snmp_targets.json', 'r') as file:
                 snmp_targets = json.load(file)
         else:
             snmp_targets = []
         
         if snmp_targets != output_snmp_targets:
-            with open('./prometheus/snmp_targets.json', 'w') as file:
+            with open('/etc/prometheus/snmp_targets.json', 'w') as file:
                 json.dump(output_snmp_targets, file)
                 
         

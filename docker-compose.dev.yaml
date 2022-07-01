@@ -48,6 +48,7 @@ services:
       - ./.env:/app/.env
       - video-data:/data
       - ./:/app
+      - prometheus-config:/etc/prometheus
     command: flask run --host=0.0.0.0
 
   worker:
@@ -69,7 +70,7 @@ services:
       - 9090:9090
     volumes:
       - prometheus-data:/prometheus
-      - ./prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -79,7 +80,7 @@ services:
   alertmanager:
     image: prom/alertmanager:v0.24.0
     volumes:
-      - ./prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/alertmanager.yml'
     ports:
@@ -90,7 +91,7 @@ services:
     environment:
       DATA_SOURCE_NAME: ${SQLALCHEMY_DATABASE_URI}?sslmode=disable
     volumes:
-      - ./prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--extend.query-path=/etc/prometheus/queries.yaml'
     ports:
@@ -104,7 +105,7 @@ services:
   blackbox-exporter:
     image: prom/blackbox-exporter:v0.21.1
     volumes:
-      - ./prometheus:/etc/prometheus
+      - prometheus-config:/etc/prometheus
     command:
       - '--config.file=/etc/prometheus/blackbox.yml'
     ports:
@@ -113,6 +114,7 @@ services:
 volumes:
   db-data:
   prometheus-data:
+  prometheus-config:
   video-data:
     driver_opts:
      type: tmpfs
