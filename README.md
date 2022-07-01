@@ -42,8 +42,9 @@ docker-compose up -d
 docker-compose exec app flask db upgrade # At each woodcamrm version upgrade
 docker-compose exec app flask seed-db # Only the first time to seed the default user and the tables
 
-# Update prometheus configuration files
+# Update prometheus and grafana configuration files
 docker-compose exec app flask prometheus-update
+docker-compose exec app flask provision-grafana
 
 # Restart services
 docker-compose restart

@@ -3,6 +3,7 @@ import shutil
 import bcrypt
 import yaml
 import click
+import configparser
 
 from flask.cli import with_appcontext
 from dotenv import dotenv_values
@@ -72,7 +73,15 @@ def prometheus_update():
     
     with open('/etc/prometheus/alertmanager.yml', 'w') as file:
         yaml.dump(alertm_conf, file)
+
+@click.command("provision-grafana")
+@with_appcontext
+def provision_grafana():
+    
+    # Copy provisioning files
+    shutil.copytree('./grafana', '/etc/grafana', dirs_exist_ok=True)
         
         
 def init_app(app):
     app.cli.add_command(prometheus_update)
+    app.cli.add_command(provision_grafana)

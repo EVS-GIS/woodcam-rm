@@ -1,0 +1,12 @@
+apiVersion: 1
+ 
+datasources:
+  - name: WoodCam-RM
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    basicAuth: true
+    basicAuthUser: $GF_SECURITY_ADMIN_USER
+    secureJsonData:
+      basicAuthPassword: $GF_SECURITY_ADMIN_PASSWORD

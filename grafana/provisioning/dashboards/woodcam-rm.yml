@@ -1,0 +1,7 @@
+apiVersion: 1
+ 
+providers:
+  - name: WoodCam-RM
+    folder: WoodCam-RM
+    options:
+      path: /etc/grafana/provisioning/dashboards

@@ -51,6 +51,7 @@ services:
       - ${PWD}/.env:/app/.env
       - video-data:/data
       - prometheus-config:/etc/prometheus
+      - grafana-config:/etc/grafana
 
   worker:
     image: woodcam-rm_app:latest
@@ -114,8 +115,27 @@ services:
     command:
       - '--config.file=/etc/prometheus/blackbox.yml'
 
+  grafana:
+    image: grafana/grafana-oss
+    restart: always
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - grafana-config:/etc/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${DEFAULT_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${DEFAULT_PASSWORD}
+      GF_SMTP_ENABLED: 'true'
+      GF_SMTP_HOST: ${MAIL_SERVER}
+      GF_SMTP_USER: ${MAIL_USERNAME}
+      GF_SMTP_PASSWORD: ${MAIL_PASSWORD}
+      GF_SMTP_FROM_ADDRESS: ${MAIL_DEFAULT_SENDER}
+    ports:
+      - 3000:3000
+
 volumes:
   db-data:
   prometheus-data:
   prometheus-config:
+  grafana-data:
+  grafana-config:
   video-data:

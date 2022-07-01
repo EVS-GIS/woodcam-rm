@@ -49,6 +49,7 @@ services:
       - video-data:/data
       - ./:/app
       - prometheus-config:/etc/prometheus
+      - grafana-config:/etc/grafana
     command: flask run --host=0.0.0.0
 
   worker:
@@ -115,10 +116,28 @@ services:
     ports:
       - 9115:9115
 
+  grafana:
+    image: grafana/grafana-oss
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - grafana-config:/etc/grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${DEFAULT_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${DEFAULT_PASSWORD}
+      GF_SMTP_ENABLED: 'true'
+      GF_SMTP_HOST: ${MAIL_SERVER}
+      GF_SMTP_USER: ${MAIL_USERNAME}
+      GF_SMTP_PASSWORD: ${MAIL_PASSWORD}
+      GF_SMTP_FROM_ADDRESS: ${MAIL_DEFAULT_SENDER}
+    ports:
+      - 3000:3000
+
 volumes:
   db-data:
   prometheus-data:
   prometheus-config:
+  grafana-data:
+  grafana-config:
   video-data:
     driver_opts:
      type: tmpfs
