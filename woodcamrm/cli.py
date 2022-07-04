@@ -3,7 +3,6 @@ import shutil
 import bcrypt
 import yaml
 import click
-import configparser
 
 from flask.cli import with_appcontext
 from dotenv import dotenv_values
@@ -21,7 +20,7 @@ def prometheus_update():
     hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     web_conf = {'basic_auth_users': {user: hashed_password.decode()}}
     
-    if os.path.isfile('./prometheus/cert.pem') and os.path.isfile('./prometheus/privkey.pem'):
+    if os.path.isfile('./ssl_certs/cert.pem') and os.path.isfile('./ssl_certs/privkey.pem'):
         web_conf['tls_server_config'] = {
             'cert_file': '/etc/prometheus/cert.pem',
             'key_file': '/etc/prometheus/privkey.pem'
@@ -46,10 +45,6 @@ def prometheus_update():
             'repeat_interval': '6h',
             'receiver': 'woodcamrm-users',
             'routes': [
-                    {
-                        'match': {'app': 'woodcam-rm'},
-                        'continue': True
-                    },
                     {
                         'match': {'alertname': 'ConnectionUnstable'},
                         'mute_time_intervals': ['gateways-reboot']
@@ -80,7 +75,7 @@ def provision_grafana():
     
     # Copy provisioning files
     shutil.copytree('./grafana', '/etc/grafana', dirs_exist_ok=True)
-        
+     
         
 def init_app(app):
     app.cli.add_command(prometheus_update)

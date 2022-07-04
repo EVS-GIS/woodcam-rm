@@ -135,6 +135,9 @@ dmypy.json
 db-backup.sh
 woodcamrm_db.sql
 
+# SSL certificates
+ssl_certs/*.pem
+
 # Prometheus certificates, passwords and configurations
 prometheus/web.yml
 prometheus/alertmanager.yml

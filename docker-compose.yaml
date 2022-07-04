@@ -74,6 +74,8 @@ services:
     volumes:
       - prometheus-data:/prometheus
       - prometheus-config:/etc/prometheus
+      - ./ssl_certs/cert.pem:/etc/prometheus/cert.pem
+      - ./ssl_certs/privkey.pem:/etc/prometheus/privkey.pem
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -121,6 +123,8 @@ services:
     volumes:
       - grafana-data:/var/lib/grafana
       - grafana-config:/etc/grafana
+      - ./ssl_certs/cert.pem:/etc/grafana/cert.pem
+      - ./ssl_certs/privkey.pem:/etc/grafana/privkey.pem
     environment:
       GF_SECURITY_ADMIN_USER: ${DEFAULT_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${DEFAULT_PASSWORD}
@@ -129,6 +133,8 @@ services:
       GF_SMTP_USER: ${MAIL_USERNAME}
       GF_SMTP_PASSWORD: ${MAIL_PASSWORD}
       GF_SMTP_FROM_ADDRESS: ${MAIL_DEFAULT_SENDER}
+      GF_SERVER_CERT_FILE: /etc/grafana/cert.pem
+      GF_SERVER_CERT_KEY: /etc/grafana/privkey.pem
     ports:
       - 3000:3000
 

@@ -32,7 +32,7 @@ The .env file contains all settings to initialize and run WoodCam RM.
 
 - Copy the example .env file and make the required configuration changes (database, etc...)
 - Install docker-compose (https://docs.docker.com/compose/install/)
-- If you want to use TLS encryption, place your cacert.pem and privatekey.pem in ./prometheus.
+- If you want to use TLS encryption, place your cacert.pem and privatekey.pem in ./ssl_certs.
 
 ```bash
 # Run containers

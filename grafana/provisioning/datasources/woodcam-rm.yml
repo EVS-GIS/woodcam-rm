@@ -5,6 +5,7 @@ datasources:
     type: prometheus
     access: proxy
     url: http://prometheus:9090
+    uid: woodcamrmprometheus
     isDefault: true
     basicAuth: true
     basicAuthUser: $GF_SECURITY_ADMIN_USER
