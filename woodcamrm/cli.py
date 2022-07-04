@@ -101,7 +101,7 @@ def provision_grafana():
         with open('/etc/grafana/provisioning/datasources/woodcam-rm.yml', 'r') as file:
             datasource_config = yaml.safe_load(file)
         
-        datasource_config['datasources'][0]['url'] = 'https://prometheus:9090'
+        datasource_config['datasources'][0]['url'] = f"https://{dotenv_values()['APP_URL']}:9090"
         
         with open('/etc/grafana/provisioning/datasources/woodcam-rm.yml', 'w') as file:
             yaml.dump(datasource_config, file)
