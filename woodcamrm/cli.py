@@ -3,7 +3,9 @@ import shutil
 import bcrypt
 import yaml
 import click
+import configparser
 
+from urllib.parse import urlparse
 from flask.cli import with_appcontext
 from dotenv import dotenv_values
 
@@ -75,6 +77,38 @@ def provision_grafana():
     
     # Copy provisioning files
     shutil.copytree('./grafana', '/etc/grafana', dirs_exist_ok=True)
+    
+    # Update config file
+    config_grafana = configparser.ConfigParser()
+    config_grafana.read('/etc/grafana/grafana.ini')
+    
+    config_grafana.set('smtp', 'enabled', 'true')
+    config_grafana.set('smtp', 'host', dotenv_values()['MAIL_SERVER'])
+    config_grafana.set('smtp', 'user', dotenv_values()['MAIL_USERNAME'])
+    config_grafana.set('smtp', 'password', dotenv_values()['MAIL_PASSWORD'])
+    config_grafana.set('smtp', 'from_address', dotenv_values()['MAIL_DEFAULT_SENDER'])
+    
+    config_grafana.set('server', 'domain', urlparse(dotenv_values()['GRAFANA_URL']).hostname)
+    config_grafana.set('server', 'root_url', dotenv_values()['GRAFANA_URL'])
+    config_grafana.set('server', 'enforce_domain', 'true')
+    
+    if os.path.isfile('./ssl_certs/cert.pem') and os.path.isfile('./ssl_certs/privkey.pem'):
+
+        config_grafana.set('server', 'protocol', 'https')
+        config_grafana.set('server', 'cert_file', '/etc/grafana/cert.pem')
+        config_grafana.set('server', 'cert_key', '/etc/grafana/privkey.pem')
+        
+        with open('/etc/grafana/provisioning/datasources/woodcam-rm.yml', 'r') as file:
+            datasource_config = yaml.safe_load(file)
+        
+        datasource_config['datasources'][0]['url'] = 'https://prometheus:9090'
+        
+        with open('/etc/grafana/provisioning/datasources/woodcam-rm.yml', 'w') as file:
+            yaml.dump(datasource_config, file)
+
+        
+    with open('/etc/grafana/grafana.ini', 'w') as configfile:
+        config_grafana.write(configfile)
      
         
 def init_app(app):
