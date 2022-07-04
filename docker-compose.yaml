@@ -128,13 +128,6 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${DEFAULT_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${DEFAULT_PASSWORD}
-      GF_SMTP_ENABLED: 'true'
-      GF_SMTP_HOST: ${MAIL_SERVER}
-      GF_SMTP_USER: ${MAIL_USERNAME}
-      GF_SMTP_PASSWORD: ${MAIL_PASSWORD}
-      GF_SMTP_FROM_ADDRESS: ${MAIL_DEFAULT_SENDER}
-      GF_SERVER_CERT_FILE: /etc/grafana/cert.pem
-      GF_SERVER_CERT_KEY: /etc/grafana/privkey.pem
     ports:
       - 3000:3000
 
