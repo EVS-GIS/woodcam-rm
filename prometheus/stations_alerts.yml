@@ -11,11 +11,11 @@ groups:
       description: 'Station {{ $labels.common_name }} - connection unstable'
       summary: 'The connection between WoodCam RM and the installation {{ $labels.common_name }} is unstable. Data recovery should be planned.'
   - alert: HighDataUsage
-    expr: sum by (common_name) (increase(ifHCInOctets{ifName='tun1'}[31d])+increase(ifHCOutOctets{ifName='tun1'}[31d])) > avg by (common_name) (last_over_time(pg_woodcamrm_stations_monthly_data[31d])) * 900000
+    expr: sum by (common_name) (increase(dataTransmitted[31d])+increase(dataReceived[31d])) > avg by (common_name) (last_over_time(pg_woodcamrm_stations_monthly_data[31d])) * 950000
     for: 30s
     labels:
       app: woodcam-rm
       severity: warning
     annotations:
       description: 'Station {{ $labels.common_name }} - data usage exceeds 90% of monthly plan'
-      summary: 'The SNMP gateway reports a usage exceeding 90% of the monthly data plan over the last 31 rolling days. The recording will probably stop soon and a data recovery must be planned.'
+      summary: 'The SNMP gateway reports a usage exceeding 95% of the monthly data plan over the last 31 rolling days. The recording will probably stop soon and a data recovery must be planned.'
