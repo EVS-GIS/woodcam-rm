@@ -140,7 +140,7 @@ def save_video_file(filepath, rtsp_url, station_id):
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
     # Define the codec and create VideoWriter object
-    fourcc = cv2.VideoWriter_fourcc(*'H264')
+    fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     
     videos_number = 0
     
