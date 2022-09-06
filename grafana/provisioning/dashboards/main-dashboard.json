@@ -130,94 +130,6 @@
                 "type": "prometheus",
                 "uid": "woodcamrmprometheus"
             },
-            "description": "From gateway SNMP protocol",
-            "fieldConfig": {
-                "defaults": {
-                    "color": {
-                        "mode": "palette-classic"
-                    },
-                    "custom": {
-                        "axisLabel": "",
-                        "axisPlacement": "auto",
-                        "barAlignment": 0,
-                        "drawStyle": "line",
-                        "fillOpacity": 0,
-                        "gradientMode": "none",
-                        "hideFrom": {
-                            "legend": false,
-                            "tooltip": false,
-                            "viz": false
-                        },
-                        "lineInterpolation": "linear",
-                        "lineWidth": 1,
-                        "pointSize": 5,
-                        "scaleDistribution": {
-                            "type": "linear"
-                        },
-                        "showPoints": "auto",
-                        "spanNulls": false,
-                        "stacking": {
-                            "group": "A",
-                            "mode": "none"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
-                        }
-                    },
-                    "mappings": [],
-                    "thresholds": {
-                        "mode": "absolute",
-                        "steps": [{
-                                "color": "green",
-                                "value": null
-                            },
-                            {
-                                "color": "red",
-                                "value": 80
-                            }
-                        ]
-                    },
-                    "unit": "decbytes"
-                },
-                "overrides": []
-            },
-            "gridPos": {
-                "h": 8,
-                "w": 12,
-                "x": 12,
-                "y": 0
-            },
-            "id": 15,
-            "options": {
-                "legend": {
-                    "calcs": [],
-                    "displayMode": "list",
-                    "placement": "bottom"
-                },
-                "tooltip": {
-                    "mode": "single",
-                    "sort": "none"
-                }
-            },
-            "targets": [{
-                "datasource": {
-                    "type": "prometheus",
-                    "uid": "woodcamrmprometheus"
-                },
-                "editorMode": "code",
-                "expr": "sum by (common_name) (increase(ifHCInOctets{ifName='tun1'}[31d])+increase(ifHCOutOctets{ifName='tun1'}[31d]))",
-                "legendFormat": "{{common_name}}",
-                "range": true,
-                "refId": "A"
-            }],
-            "title": "Data transferred over 31 rolling days",
-            "type": "timeseries"
-        },
-        {
-            "datasource": {
-                "type": "prometheus",
-                "uid": "woodcamrmprometheus"
-            },
             "description": "",
             "fieldConfig": {
                 "defaults": {
@@ -381,7 +293,7 @@
                 "range": true,
                 "refId": "A"
             }],
-            "title": "Data transmitted 31 rolling days geneko SNMP",
+            "title": "Data transmitted 31 rolling days",
             "type": "timeseries"
         },
         {

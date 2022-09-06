@@ -80,8 +80,6 @@ def add():
         
         scheduler.get_job(id="hydrodata_update").modify(
             next_run_time=datetime.now())
-        scheduler.get_job(id="check_data_plan").modify(
-            next_run_time=datetime.now())
         scheduler.get_job(id="alive_check").modify(
             next_run_time=datetime.now())
         
@@ -144,8 +142,6 @@ def update(id):
         dbsql.session.commit()
         
         scheduler.get_job(id="hydrodata_update").modify(
-            next_run_time=datetime.now())
-        scheduler.get_job(id="check_data_plan").modify(
             next_run_time=datetime.now())
         scheduler.get_job(id="alive_check").modify(
             next_run_time=datetime.now())
