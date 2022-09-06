@@ -131,25 +131,26 @@ def alive_check():
         output_snmp_targets = []
         
         # Retrieve data usage status from prometheus database
-        rep = requests.get(f"{scheduler.app.config['PROMETHEUS_URL']}/api/v1/query", 
-                    auth=(scheduler.app.config['DEFAULT_USER'], scheduler.app.config['DEFAULT_PASSWORD']),
-                    params={'query':'sum by (common_name) (increase(dataTransmitted[31d])+increase(dataReceived[31d]))'})
-        data_usage = rep.json()
+        # rep = requests.get(f"{scheduler.app.config['PROMETHEUS_URL']}/api/v1/query", 
+        #             auth=(scheduler.app.config['DEFAULT_USER'], scheduler.app.config['DEFAULT_PASSWORD']),
+        #             params={'query':'sum by (common_name) (increase(dataTransmitted[31d])+increase(dataReceived[31d]))'})
+        # data_usage = rep.json()
             
         for st in stations:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(10)
 
             # Retrieve ping status from prometheus database
-            rep = requests.get(f"{scheduler.app.config['PROMETHEUS_URL']}/api/v1/query", 
-                    auth=(scheduler.app.config['DEFAULT_USER'], scheduler.app.config['DEFAULT_PASSWORD']),
-                    params={'query':'probe_success{common_name="'+st.common_name+'", hardware="camera"}'})
+            # rep = requests.get(f"{scheduler.app.config['PROMETHEUS_URL']}/api/v1/query", 
+            #         auth=(scheduler.app.config['DEFAULT_USER'], scheduler.app.config['DEFAULT_PASSWORD']),
+            #         params={'query':'probe_success{common_name="'+st.common_name+'", hardware="camera"}'})
                 
-            if rep.json()['data']['result'][0]['value'][1] == 1:
-                st.ping_alert = False
-                st.last_ping = rep.json()['data']['result'][0]['value'][0]
-            else:
-                st.ping_alert = True
+            # if rep.json()['data']['result'][0]['value'][1] == 1:
+            #     st.ping_alert = False
+            #     st.last_ping = rep.json()['data']['result'][0]['value'][0]
+            # else:
+            #     st.ping_alert = True
+            st.ping_alert=False
                 
             # Update data usage
             #TODO
