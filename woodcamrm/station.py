@@ -5,14 +5,13 @@ import cv2
 from datetime import datetime
 
 from flask import (
-    Blueprint, redirect, render_template, url_for, Response
+    Blueprint, redirect, render_template, url_for, Response 
 )
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, DecimalField, TelField, BooleanField
 from wtforms.validators import DataRequired, Optional, IPAddress
 
 from werkzeug.exceptions import abort
-from sqlalchemy import exc
 
 from woodcamrm.auth import login_required
 from woodcamrm.db import RecordMode, Stations, Jobs, JobState
@@ -53,6 +52,14 @@ class StationForm(FlaskForm):
     dec_threshold = DecimalField('Water level threshold december (mm)', validators=[Optional()])
 
 
+def get_station(id):
+    station = Stations.query.filter_by(id=id).first()
+
+    if station is None:
+        abort(404, f"Station {id} doesn't exist.")
+
+    return station
+
 @bp.route('/')
 @login_required
 def index():
@@ -80,23 +87,12 @@ def add():
         
         scheduler.get_job(id="hydrodata_update").modify(
             next_run_time=datetime.now())
-        scheduler.get_job(id="check_data_plan").modify(
-            next_run_time=datetime.now())
         scheduler.get_job(id="alive_check").modify(
             next_run_time=datetime.now())
         
         return redirect(url_for('station.index'))
         
     return render_template('station/add.html', station=station, selected='addstation', form=form)
-
-
-def get_station(id):
-    station = Stations.query.filter_by(id=id).first()
-
-    if station is None:
-        abort(404, f"Station {id} doesn't exist.")
-
-    return station
 
 
 @bp.route('/<int:id>', methods=('GET', 'POST'))
@@ -144,8 +140,6 @@ def update(id):
         dbsql.session.commit()
         
         scheduler.get_job(id="hydrodata_update").modify(
-            next_run_time=datetime.now())
-        scheduler.get_job(id="check_data_plan").modify(
             next_run_time=datetime.now())
         scheduler.get_job(id="alive_check").modify(
             next_run_time=datetime.now())

@@ -114,93 +114,6 @@ def hydrodata_update():
 
 @scheduler.task(
     "interval",
-    id="check_data_plan",
-    seconds=60 * 60,
-    max_instances=1,
-    start_date="2022-01-01 12:00:00",
-)
-def check_data_plan():
-    """Retrieve data usage from router using SNMP protocol."""
-    with scheduler.app.app_context():
-        jb = Jobs.query.filter_by(job_name="check_data_plan").first()
-        jb.last_execution = datetime.now()
-        jb.state = 0
-        dbsql.session.commit()
-
-        stations = Stations.query.all()
-        
-        for st in stations:
-            # Check if station IP is informed
-            if st.ip and (st.snmp_received or st.snmp_transmitted) and not st.ping_alert:
-                total = 0
-
-                # Loop over the two OIDs (transmitted and received)
-                for oid in [st.snmp_received, st.snmp_transmitted]:
-                    # Retrieve value from SNMP agent
-                    iterator = getCmd(
-                        SnmpEngine(),
-                        CommunityData("public", mpModel=0),
-                        UdpTransportTarget((st.ip, 161)),
-                        ContextData(),
-                        ObjectType(ObjectIdentity(oid)),
-                    )
-
-                    errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-
-                    if errorIndication:
-                        print(errorIndication)
-                        jb.last_execution = datetime.now()
-                        jb.state = 1
-                        dbsql.session.commit()
-                        continue
-                    elif errorStatus:
-                        print(
-                            "%s at %s"
-                            % (
-                                errorStatus.prettyPrint(),
-                                errorIndex and varBinds[int(errorIndex) - 1][0] or "?",
-                            )
-                        )
-                        jb.last_execution = datetime.now()
-                        jb.state = 1
-                        dbsql.session.commit()
-                        continue
-                    else:
-                        # Add value to total
-                        total += int(varBinds[0][1])
-
-                # Convert total from bytes to Mb
-                total = total * 10**-6
-                
-                if not st.last_data:
-                    st.last_data = 0
-                    
-                # If router total data is lower than last value, the router has probably rebooted
-                if total < st.last_data:
-                    st.last_data = total    
-                    total += float(st.current_data)
-                else:
-                    to_substract = st.last_data
-                    st.last_data = total
-                    total -= float(to_substract)
-                    total += float(st.current_data)
-
-                # Update stations table on the database
-                st.current_data = total
-                st.last_data_check = datetime.now()
-                dbsql.session.commit()
-
-        # Update the jobs table in the database
-        jb.last_execution = datetime.now()
-        if jb.state == 0:
-            jb.state = 4
-            jb.message = 'running'
-        dbsql.session.commit()
-
-#TODO: Task to reset data plan
-
-@scheduler.task(
-    "interval",
     id="alive_check",
     seconds=120,
     max_instances=1,
@@ -216,31 +129,31 @@ def alive_check():
         
         output_ping_targets = []
         output_snmp_targets = []
+        
+        # Retrieve data usage status from prometheus database
+        # rep = requests.get(f"{scheduler.app.config['PROMETHEUS_URL']}/api/v1/query", 
+        #             auth=(scheduler.app.config['DEFAULT_USER'], scheduler.app.config['DEFAULT_PASSWORD']),
+        #             params={'query':'sum by (common_name) (increase(dataTransmitted[31d])+increase(dataReceived[31d]))'})
+        # data_usage = rep.json()
             
         for st in stations:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(10)
 
-            # Try to ping camera or installation
-            if st.camera_port:
-                ping_port = st.camera_port
-            elif st.installation_port:
-                ping_port = st.installation_port
-            else:
-                ping_port = 80
+            # Retrieve ping status from prometheus database
+            # rep = requests.get(f"{scheduler.app.config['PROMETHEUS_URL']}/api/v1/query", 
+            #         auth=(scheduler.app.config['DEFAULT_USER'], scheduler.app.config['DEFAULT_PASSWORD']),
+            #         params={'query':'probe_success{common_name="'+st.common_name+'", hardware="camera"}'})
                 
-            try:
-                s.connect((st.ip, int(ping_port)))
-                s.shutdown(2)
-                response = True
-            except:
-                response = False
-
-            if response:
-                st.ping_alert = False
-                st.last_ping = datetime.now()    
-            else:
-                st.ping_alert = True
+            # if rep.json()['data']['result'][0]['value'][1] == 1:
+            #     st.ping_alert = False
+            #     st.last_ping = rep.json()['data']['result'][0]['value'][0]
+            # else:
+            #     st.ping_alert = True
+            st.ping_alert=False
+                
+            # Update data usage
+            #TODO
                     
             # If coordinates are set, update daymode
             if st.long and st.lat:

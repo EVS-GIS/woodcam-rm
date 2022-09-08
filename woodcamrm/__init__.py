@@ -138,7 +138,7 @@ def save_video_file(filepath, rtsp_url, station_id):
     width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     # Get current height of frame
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-    
+
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     

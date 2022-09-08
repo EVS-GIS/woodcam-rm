@@ -3,6 +3,9 @@ WORKDIR /app
 
 COPY . .
 
+RUN apt-get -y update && apt-get -y install python3-opencv && apt-get clean
+ENV PYTHONPATH "${PYTHONPATH}:/usr/lib/python3/dist-packages"
+
 RUN pip install -e .
 RUN pip install gunicorn
 

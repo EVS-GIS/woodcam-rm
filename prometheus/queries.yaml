@@ -11,12 +11,6 @@ pg_woodcamrm_stations:
     - last_hydro:
         usage: "GAUGE"
         decription: "Station API water level"
-    - current_data:
-        usage: "GAUGE"
-        description: "Data plan usage"
-    - ping_alert:
-        usage: "COUNTER"
-        description: "Last ping didn't respond"
     - current_daymode:
         usage: "GAUGE"
         description: "Current night/day mode"

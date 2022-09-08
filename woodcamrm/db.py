@@ -143,16 +143,12 @@ def seed_db():
     download_records = Jobs(job_name = 'download_records',
                        full_name = 'Download records',
                        description = 'Archive records to FTP server and remove temporary clips.')
-    check_data_plan = Jobs(job_name = 'check_data_plan',
-                       full_name = 'Check data plan',
-                       description = 'Estimate 4G data plan usage.')
     
     dbsql.session.add(default_user)
     dbsql.session.add(alive_check)
     dbsql.session.add(hydrodata_update)
     dbsql.session.add(records_check)
     dbsql.session.add(download_records)
-    dbsql.session.add(check_data_plan)
         
     dbsql.session.commit()
         
