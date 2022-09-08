@@ -13,6 +13,7 @@ setup(
         'bcrypt==3.2.2',
         'celery[redis]==5.2.7',
         'flask==2.1.2',
+        'flask_httpauth==4.7.0',
         'flask-restx==0.5.1',
         'flask-sqlalchemy==2.5.1',
         'flask-apscheduler==1.12.4',
@@ -25,6 +26,7 @@ setup(
         'python-dotenv==0.20.0',
         'pyyaml==6.0',
         'requests==2.28.1',
+        'simplejson==3.17.6',
         'suntime==1.2.5',
         'werkzeug==2.1.2'
     ],

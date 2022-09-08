@@ -1,12 +1,11 @@
 import os
 import glob
 import cv2
-import requests
 
 from datetime import datetime
 
 from flask import (
-    Blueprint, redirect, render_template, url_for, Response, current_app
+    Blueprint, redirect, render_template, url_for, Response 
 )
 from flask_wtf import FlaskForm
 from wtforms import StringField, IntegerField, DecimalField, TelField, BooleanField
