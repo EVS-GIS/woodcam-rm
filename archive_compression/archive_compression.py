@@ -7,7 +7,6 @@ import numpy as np
 from urllib.parse import urljoin
 from dotenv import load_dotenv
 from ftplib import FTP, error_perm
-from pathlib import Path
 
 
 # Load .env file
@@ -132,7 +131,7 @@ with FTP(os.environ["ARCHIVE_HOST"],
         print('removing files...')
         # Remove distant source file
         #TODO: check if files are the same before deleting
-        # ftp.delete(ftp_clip)
+        ftp.delete(ftp_clip)
         
         # Remove local files
         os.remove(local_source_path)
