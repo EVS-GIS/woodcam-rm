@@ -50,6 +50,7 @@ with FTP(os.environ["ARCHIVE_HOST"],
         
         for yr in years:
             year_dir = os.path.join(st_dir, yr)
+            
             check_ftp_directory(ftp, year_dir)
             
             # Months folders
@@ -58,11 +59,12 @@ with FTP(os.environ["ARCHIVE_HOST"],
         
             if len(months) == 0:
                 print(f'{source_year} empty')
-                # ftp.rmd(source_year)
+                ftp.rmd(source_year)
                 
             else:
                 for mth in months:
                     month_dir = os.path.join(year_dir, mth)
+                    
                     check_ftp_directory(ftp, month_dir)
                     
                     # Days folders
@@ -71,11 +73,12 @@ with FTP(os.environ["ARCHIVE_HOST"],
                     
                     if len(days) == 0:
                         print(f'{source_month} empty')
-                        # ftp.rmd(source_month)
+                        ftp.rmd(source_month)
                         
                     else:
                         for dy in days:
-                            day_dir = os.path.join(year_dir, dy)
+                            day_dir = os.path.join(month_dir, dy)
+                            
                             check_ftp_directory(ftp, day_dir)
                             
                             source_day = os.path.join(source_month, dy)
@@ -84,12 +87,13 @@ with FTP(os.environ["ARCHIVE_HOST"],
                             
                             if len(day_clips) == 0:
                                 print(f'{source_day} empty')
-                                # ftp.rmd(source_day)
+                                ftp.rmd(source_day)
                                 
                             else:
                                 clips.append(day_clips)
     
-    clips = list(np.concatenate(clips). flat)           
+    clips = list(np.concatenate(clips). flat)
+    clips.sort()
                 
         
     for ftp_clip in clips:
@@ -115,21 +119,22 @@ with FTP(os.environ["ARCHIVE_HOST"],
         stream = ffmpeg.input(local_source_path).output(local_output_path, vcodec='libx264', crf=23)
         
         try:
-            ffmpeg.run(stream)
+            ffmpeg.run(stream, quiet=True)
         except:
             print(f'!! Invalid data found in {ftp_clip} !!')
             continue
         
         # Upload encoded video
-        print('uploading encoded video...')
+        print(f'uploading encoded video to {output_path}...')
         with open(local_output_path, 'rb') as f:
             ftp.storbinary('STOR ' + output_path, f)
             
-        # Remove local files
         print('removing files...')
+        # Remove distant source file
+        #TODO: check if files are the same before deleting
+        # ftp.delete(ftp_clip)
+        
+        # Remove local files
         os.remove(local_source_path)
         os.remove(local_output_path)
         
-        # Remove distant source file
-        #TODO: Test if output file exists before removing
-        # ftp.delete(ftp_clip)

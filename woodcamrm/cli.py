@@ -48,7 +48,7 @@ def prometheus_update():
             'receiver': 'woodcamrm-users',
             'routes': [
                     {
-                        'match': {'alertname': 'ConnectionUnstable'},
+                        'match': {'app': 'woodcam-rm'},
                         'mute_time_intervals': ['gateways-reboot']
                     }
                 ]

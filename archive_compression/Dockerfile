@@ -1,10 +1,11 @@
-FROM python:3.9-alpine3.16
+FROM python:3.9
 
-COPY . .
+COPY archive_compression.py archive_compression.py
+COPY crontab /etc/cron.d/crontab
 
-RUN apt-get -y update && apt-get -y install ffmpeg
-RUN pip install ffmpeg-python
+RUN apt-get update -y && apt-get install -y cron ffmpeg
+RUN pip install numpy requests python-dotenv ffmpeg-python
 
-RUN crontab crontab
+RUN crontab /etc/cron.d/crontab
 
 CMD ["crond", "-f"]
