@@ -1,0 +1,10 @@
+# This docker-compose file is dedicated to video archive compression deported on another server/computer than the WoodCam RM one.
+
+version: "3.9"
+services:
+  archive_compression:
+    build: ./archive_compression
+    environment:
+      TZ: $SCHEDULER_TIMEZONE
+    volumes:
+      - ./.env:/.env

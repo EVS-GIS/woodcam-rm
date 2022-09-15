@@ -17,5 +17,5 @@ groups:
       app: woodcam-rm
       severity: warning
     annotations:
-      description: 'Station {{ $labels.common_name }} - data usage exceeds 90% of monthly plan'
+      description: 'Station {{ $labels.common_name }} - data usage exceeds 95% of monthly plan'
       summary: 'The SNMP gateway reports a usage exceeding 95% of the monthly data plan over the last 31 rolling days. The recording will probably stop soon and a data recovery must be planned.'

@@ -71,6 +71,17 @@ flask db upgrade # At each woodcamrm version upgrade
 flask run
 ```
 
+## Deploy video archives compression on another server
+
+Video compression can be CPU intensive. In order to keep the main Woodcam RM application light, you have the possibility of deporting this task to another server.
+- Clone the repository in your compression server.
+- Copy the **App configuration** and the **Archive FTP server configuration** sections of your WoodcamRM server .env file to the .env file of your compression server.
+- Run the following docker-compose command in your compression server.
+
+```
+docker-compose -f docker-compose.aux.yaml up -d
+```
+
 # Run development tests (testing database needed)
 
 ```bash
