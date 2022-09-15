@@ -25,6 +25,7 @@ setup(
         'pysnmp==4.4.12',
         'python-dotenv==0.20.0',
         'pyyaml==6.0',
+        'opencv-python-headless==4.6.0.66',
         'requests==2.28.1',
         'simplejson==3.17.6',
         'suntime==1.2.5',
