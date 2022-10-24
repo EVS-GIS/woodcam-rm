@@ -5,7 +5,8 @@ COPY crontab /etc/cron.d/crontab
 
 RUN apt-get update -y && apt-get install -y cron ffmpeg
 RUN pip install numpy requests python-dotenv ffmpeg-python
+RUN touch /var/log/archivecompression.log
 
 RUN crontab /etc/cron.d/crontab
 
-CMD ["crond", "-f"]
+CMD cron && tail -f /var/log/archivecompression.log

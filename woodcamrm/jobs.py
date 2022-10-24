@@ -297,7 +297,15 @@ def records_check():
             
             for clip in old_clips:
                 os.remove(clip)
-        
+            
+            # Remove archive clips older than 1hour
+            old_clips = [os.path.join(st.storage_path, 'archives', f) for f in os.listdir(os.path.join(st.storage_path, 'archives')) 
+                         if time.time() - os.stat(os.path.join(st.storage_path, 'archives', f)).st_mtime >= (60*60)
+                         and not os.path.isdir(os.path.join(st.storage_path, 'archives', f))]
+            
+            for clip in old_clips:
+                os.remove(clip)
+                
         # Update the jobs table in the database
         jb.last_execution = datetime.now()
         jb.state = 4
