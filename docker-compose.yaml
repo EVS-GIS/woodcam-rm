@@ -35,7 +35,7 @@ services:
       - "21:21"
       - "21000-21010:21000-21010"
     volumes:
-      - video-data:/data
+      - ${PWD}/videos:/data
 
   app:
     build: .
@@ -49,14 +49,14 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ${PWD}/.env:/app/.env
-      - video-data:/data
+      - ${PWD}/videos:/data
       - prometheus-config:/etc/prometheus
       - grafana-config:/etc/grafana
 
   worker:
     image: woodcam-rm_app:latest
     restart: always
-    command: celery -A woodcamrm.celery worker --loglevel=info -c 10
+    command: celery -A woodcamrm.celery worker --loglevel=info -c 3
     depends_on:
       db:
         condition: service_healthy
@@ -64,7 +64,7 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ${PWD}/.env:/app/.env
-      - video-data:/data
+      - ${PWD}/videos:/data
 
   prometheus:
     image: prom/prometheus:v2.36.1
