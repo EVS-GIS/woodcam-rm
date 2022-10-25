@@ -299,12 +299,23 @@ def records_check():
                 os.remove(clip)
             
             # Remove archive clips older than 1hour
-            old_clips = [os.path.join(st.storage_path, 'archives', f) for f in os.listdir(os.path.join(st.storage_path, 'archives')) 
-                         if time.time() - os.stat(os.path.join(st.storage_path, 'archives', f)).st_mtime >= (60*60)
-                         and not os.path.isdir(os.path.join(st.storage_path, 'archives', f))]
+            archives_dir = os.path.join(st.storage_path, 'archives')
+            old_clips = [os.path.join(archives_dir, f) for f in os.listdir(archives_dir) 
+                         if time.time() - os.stat(os.path.join(archives_dir, f)).st_mtime >= (60*60)
+                         and not os.path.isdir(os.path.join(archives_dir, f))]
             
             for clip in old_clips:
                 os.remove(clip)
+                
+            # Remove recovered clips older than 1hour
+            recovery_dir = os.path.join(st.storage_path, 'recovery')
+            if os.path.isdir(recovery_dir):
+                recovered_clips = [os.path.join(recovery_dir, f) for f in os.listdir(recovery_dir) 
+                            if time.time() - os.stat(os.path.join(recovery_dir, f)).st_mtime >= (60*60)
+                            and not os.path.isdir(os.path.join(recovery_dir, f))]
+                
+                for clip in recovered_clips:
+                    os.remove(clip)
                 
         # Update the jobs table in the database
         jb.last_execution = datetime.now()

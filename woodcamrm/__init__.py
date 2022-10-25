@@ -23,7 +23,7 @@ celery = Celery(__name__,
                 backend=dotenv_values()["CELERY_RESULT_BACKEND"],
                 broker=dotenv_values()["CELERY_BROKER_URL"])
 api_bp = Blueprint('api', __name__)
-api = Api(api_bp)
+api = Api(api_bp, version=1.0, title='WoodCam-RM API', description='WoodCam-RM backend API')
 
 
 def create_app(test_config=None):
