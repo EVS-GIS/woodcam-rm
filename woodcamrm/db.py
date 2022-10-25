@@ -140,15 +140,11 @@ def seed_db():
     records_check = Jobs(job_name = 'records_check',
                        full_name = 'Check records',
                        description = 'Check and launch live records from camera.')
-    download_records = Jobs(job_name = 'download_records',
-                       full_name = 'Download records',
-                       description = 'Archive records to FTP server and remove temporary clips.')
     
     dbsql.session.add(default_user)
     dbsql.session.add(alive_check)
     dbsql.session.add(hydrodata_update)
     dbsql.session.add(records_check)
-    dbsql.session.add(download_records)
         
     dbsql.session.commit()
         
