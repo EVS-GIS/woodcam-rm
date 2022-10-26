@@ -33,7 +33,7 @@ services:
       - "21:21"
       - "21000-21010:21000-21010"
     volumes:
-      - video-data:/data
+      - /tmp/woodcamrm:/data
 
   app:
     build: .
@@ -46,7 +46,7 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ./.env:/app/.env
-      - video-data:/data
+      - /tmp/woodcamrm:/data
       - ./:/app
       - prometheus-config:/etc/prometheus
       - grafana-config:/etc/grafana
@@ -62,7 +62,7 @@ services:
       TZ: $SCHEDULER_TIMEZONE
     volumes:
       - ./.env:/app/.env
-      - video-data:/data
+      - /tmp/woodcamrm:/data
       - ./:/app
 
   prometheus:
@@ -137,7 +137,3 @@ volumes:
   prometheus-config:
   grafana-data:
   grafana-config:
-  video-data:
-    driver_opts:
-     type: tmpfs
-     device: tmpfs

@@ -156,7 +156,7 @@ def save_video_file(filepath, rtsp_url, station_id):
         archive_output = cv2.VideoWriter(archive_file, fourcc, 3, (int(width),int(height)))
         
         archive_timeout = time.time() + 600
-        logger.debug(f"starting {archive_file} recording")
+        logger.warning(f"starting {archive_file} recording")
         logger.debug(f"archive file timeout: {datetime.fromtimestamp(archive_timeout).strftime('%Y-%m-%d %H:%M:%S')}")
         while time.time() < archive_timeout:
             videos_number+=1

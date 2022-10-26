@@ -1,8 +1,10 @@
 import os
 import requests
-import datetime
+import urllib3
+import pytz
 import simplejson as json
 
+from datetime import datetime, timedelta
 from flask_httpauth import HTTPBasicAuth
 from werkzeug.security import check_password_hash
 from requests.auth import HTTPDigestAuth 
@@ -68,22 +70,25 @@ clip_parser.add_argument("to_date", type=inputs.datetime_from_iso8601, location=
 class DataRecovery(Resource):
     decorators = [auth.login_required]
         
-    # @datarec_ns.doc(description='Download local camera record on the WoodCam-RM server', 
-    #                 params={
-    #                     'station': 'Station ID', 
-    #                     'from_date': 'From datetime. Accepted format: YYYY-mm-ddTHH:MM:SS+ZZ:ZZ (example: 2018-12-21T00:00:01+02:00)',
-    #                     'to_date': 'To datetime. Accepted format: YYYY-mm-ddTHH:MM:SS+ZZ:ZZ (example: 2018-12-21T00:00:01+02:00)'
-    #                     }
-    #                 )
-    @datarec_ns.doc(description='Download local camera record on the WoodCam-RM server')
+    @datarec_ns.doc(description='Download local camera record on the WoodCam-RM server', 
+                    params={
+                        'station': 'Station common name', 
+                        'from_date': 'Download record from datetime. Accepted format: YYYY-mm-ddTHH:MM:SS+ZZ:ZZ (example: 2018-12-21T00:00:01+02:00)',
+                        'to_date': 'Download record to datetime. Accepted format: YYYY-mm-ddTHH:MM:SS+ZZ:ZZ (example: 2018-12-21T00:00:01+02:00)'
+                        }
+                    )
     @api.expect(clip_parser)
     def post(self) -> None:
+        
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
         
         args = clip_parser.parse_args()
         station = args['station']
         from_date = args['from_date']
         to_date = args['to_date']
         
+        recovered_duration = 10
+
         # Check if station exists
         st = Stations.query.filter(Stations.common_name == station).first()
         if not st:
@@ -94,7 +99,16 @@ class DataRecovery(Resource):
         if not os.path.isdir(recovery_dir):
             os.mkdir(recovery_dir)
             
-        # Get list of local recordings on cameras with AXIS API
+        # Generate list of 10min video files
+        def datetime_range(start, end):
+            current = start
+            while current < end:
+                yield current
+                current += timedelta(minutes=recovered_duration)
+
+        starts = [dt for dt in datetime_range(from_date, to_date)]
+            
+        # Get list of recordings stored on cameras with AXIS API
         rep = requests.get(f"https://{st.ip}:{st.camera_port}/axis-cgi/record/list.cgi?recordingid=all", 
                            auth=HTTPDigestAuth(st.api_user, st.api_password),
                            verify=False)
@@ -102,43 +116,43 @@ class DataRecovery(Resource):
         tree = ElementTree.fromstring(rep.content)
         recordings = [rec.attrib for rec in tree.findall("./recordings/recording")]
         
-        # Check each record if it correspond to start or end of recovery request
+        # Convert string attributes to datetime
         for record in recordings:
             for timekey in ('starttime', 'starttimelocal', 'stoptime', 'stoptimelocal'):
                 if record[timekey]:
-                    record[timekey] = datetime.datetime.strptime(record[timekey], '%Y-%m-%dT%H:%M:%S.%f%z')
+                    record[timekey] = datetime.strptime(record[timekey], '%Y-%m-%dT%H:%M:%S.%f%z')
             
-            if record['starttime'].day == from_date.day:
-                start_record = record
-                
-            if record['stoptime'] and record['stoptime'].day == to_date.day:
-                stop_record = record
+        # Start loop for each 10min record output
+        recovered_list = []
+        for start_time in starts:
+            stop_time = start_time + timedelta(minutes=recovered_duration)
             
-        # If all the recovery request is contained inside a single record
-        if start_record == stop_record:
-
+            record = next(rec for rec in recordings if rec["starttime"].day == start_time.day)
+            
             r = requests.get(f"https://{st.ip}:{st.camera_port}/axis-cgi/record/export/exportrecording.cgi",
                             auth=HTTPDigestAuth(st.api_user, st.api_password),
                             verify=False,
                             stream=True,
                             params={
                                 'schemaversion': 1,
-                                'recordingid': start_record['recordingid'],
-                                'diskid': start_record['diskid'],
+                                'recordingid': record['recordingid'],
+                                'diskid': record['diskid'],
                                 'exportformat': 'matroska',
-                                'starttime': from_date.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                                'stoptime': to_date.strftime('%Y-%m-%dT%H:%M:%SZ')                             
+                                'starttime': start_time.astimezone(pytz.UTC).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                                'stoptime': stop_time.astimezone(pytz.UTC).strftime('%Y-%m-%dT%H:%M:%SZ')                             
                             })
-        
-            recovered_archive_file = os.path.join(recovery_dir, f"recovered_{from_date.strftime('%Y-%m-%d_%H-%M-%S')}.mkv")
-            size = open(recovered_archive_file, 'wb').write(r.content)
-            r.close()
-        
-        else:
-            return {'error': 'recovery request need to download multiple records, which is not supported yet'}, 400
-        
-        return {'recovered_archive_file': recovered_archive_file,
-                'size': size,
+            
+            if r.status_code == 200:
+                recovered_archive_file = os.path.join(recovery_dir, f"recovered_{start_time.strftime('%Y-%m-%d_%H-%M-%S')}.mkv")
+                
+                with open(recovered_archive_file, 'wb') as output:
+                    output.write(r.content)
+                    
+                r.close()
+                
+                recovered_list.append(recovered_archive_file)
+
+        return {'recovered_archive_files': recovered_list,
                 'retention': 3600}
 
 

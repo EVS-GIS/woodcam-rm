@@ -71,6 +71,14 @@ flask db upgrade # At each woodcamrm version upgrade
 flask run
 ```
 
+## Archive the 10min video files on an external server with a simple cron job on this server
+
+First, copy your ssh public key on the woodcam-rm server. Then edit your crontab with ```crontab -e```.
+
+```
+*/10 5-22 * * * rsync <woodcam-rm server>:<path to app repository>/videos/<station common_name>/archives/*.avi <archiving path>/"$(date +'\%Y-\%m-\%d')"/ >> /var/log/woodcamrm-archiving.log 2>&1
+```
+
 ## Deploy video archives compression on another server
 
 Video compression can be CPU intensive. In order to keep the main Woodcam RM application light, you have the possibility of deporting this task to another server.
