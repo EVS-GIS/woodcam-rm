@@ -12,7 +12,8 @@ from xml.etree import ElementTree
 
 from flask_restx import Resource, fields, inputs
 from woodcamrm import api
-from woodcamrm.db import Stations, Users
+from woodcamrm.extensions import dbsql
+from woodcamrm.db import Stations, Users, PlannedRecoveries
 
 
 auth = HTTPBasicAuth()
@@ -163,7 +164,21 @@ class PlanRecovery(Resource):
     @datarec_ns.doc(description='Plan data recovery for the next night')
     @api.expect(clip_parser)
     def post(self) -> None:
-        return True
+        
+        args = clip_parser.parse_args()
+        station = args['station']
+        from_date = args['from_date'].astimezone(pytz.UTC).replace(tzinfo=None)
+        to_date = args['to_date'].astimezone(pytz.UTC).replace(tzinfo=None)
+
+        #TODO: check if already planned before adding it
+        planned_rec = PlannedRecoveries(common_name=station,
+                                        from_date=from_date,
+                                        to_date=to_date)
+        
+        dbsql.session.add(planned_rec)
+        dbsql.session.commit()
+        
+        return {'success': True}
     
     
 @datarec_ns.route('/list_recovery')
@@ -172,4 +187,12 @@ class PlanRecovery(Resource):
 
     @datarec_ns.doc(description='List data recovery planned for the next night')
     def get(self) -> None:
-        return True
+        
+        planned_rec = PlannedRecoveries.query.all()
+        results = {item.id: {'station': item.common_name, 
+                             'from_date': item.from_date.strftime('%Y-%m-%dT%H:%M:%S%z'), 
+                             'to_date': item.to_date.strftime('%Y-%m-%dT%H:%M:%S%z')} for item in planned_rec}
+        
+        results = json.dumps(results, use_decimal=True)
+        
+        return {'data': results}

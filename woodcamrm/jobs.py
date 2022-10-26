@@ -5,7 +5,6 @@ import redis
 import time
 import json
 
-from ftplib import FTP, error_perm
 from datetime import datetime
 from suntime import Sun
 
@@ -16,7 +15,7 @@ from pysnmp.hlapi import *
 from woodcamrm import save_video_file
 from woodcamrm.auth import login_required
 from woodcamrm.extensions import scheduler, dbsql
-from woodcamrm.db import RecordMode, Stations, Jobs, Users
+from woodcamrm.db import RecordMode, Stations, Jobs, PlannedRecoveries
 
 bp = Blueprint("jobs", __name__, url_prefix="/jobs")
 
@@ -322,8 +321,39 @@ def records_check():
         jb.last_execution = datetime.now()
         jb.state = 4
         dbsql.session.commit()
+  
         
+@scheduler.task(
+    "cron",
+    id="recover_data",
+    max_instances=1,
+    minute='30',
+    hour='23'
+)
+def recover_data():
+    with scheduler.app.app_context():
         
+        stations = Stations.query.filter(Stations.storage_path != None).all()
+
+        for st in stations:
+            #TODO: Check prometheus data to plan recovery automatically
+            #TODO: Parallelize by station
+            
+            planned_rec = PlannedRecoveries.query.filter(PlannedRecoveries.common_name == st.common_name).all()
+            
+            if planned_rec:
+                for record in planned_rec:
+                    r = requests.post(f'http://127.0.0.1:5000/api/v1/datarecovery/download_record',
+                                auth= (scheduler.app.config["DEFAULT_USER"],scheduler.app.config["DEFAULT_PASSWORD"]),
+                                data={'station': record.common_name,
+                                      'from_date': record.from_date.strftime('%Y-%m-%dT%H:%M:%S%z'),
+                                      'to_date': record.to_date.strftime('%Y-%m-%dT%H:%M:%S%z')})
+                    
+                    if r.status_code == 200:
+                        dbsql.session.delete(record)
+                        dbsql.commit()
+                
+  
 ########################
 # Manual jobs operations
 ########################

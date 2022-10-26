@@ -117,6 +117,13 @@ class Jobs(dbsql.Model):
         return '<Job %r>' % self.job_name
 
 
+class PlannedRecoveries(dbsql.Model):
+    id = dbsql.Column(dbsql.Integer, primary_key=True)
+    common_name = dbsql.Column(dbsql.String(120), nullable=False)
+    from_date = dbsql.Column(dbsql.DateTime, nullable=False)
+    to_date = dbsql.Column(dbsql.DateTime, nullable=False)
+
+
 class Settings(dbsql.Model):
     id = dbsql.Column(dbsql.Integer, primary_key=True)
     parameter = dbsql.Column(dbsql.String, unique=True, nullable=False)
