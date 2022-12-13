@@ -290,9 +290,10 @@ def records_check():
                     pass
 
             # Remove clips older than 15min
-            old_clips = [os.path.join(st.storage_path, f) for f in os.listdir(st.storage_path) 
-                         if time.time() - os.stat(os.path.join(st.storage_path, f)).st_mtime >= (15*60)
-                         and not os.path.isdir(os.path.join(st.storage_path, f))]
+            videos_dir = os.path.join(st.storage_path, 'videos')
+            old_clips = [os.path.join(videos_dir, f) for f in os.listdir(videos_dir) 
+                         if time.time() - os.stat(os.path.join(videos_dir, f)).st_mtime >= (15*60)
+                         and not os.path.isdir(os.path.join(videos_dir, f))]
             
             for clip in old_clips:
                 os.remove(clip)
