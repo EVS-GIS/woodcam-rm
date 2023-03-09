@@ -42,7 +42,7 @@ def prometheus_update():
             },
         'route': {
             'group_by': ['severity'],
-            'group_wait': '30s',
+            'group_wait': '10m',
             'group_interval': '5m',
             'repeat_interval': '6h',
             'receiver': 'woodcamrm-users',

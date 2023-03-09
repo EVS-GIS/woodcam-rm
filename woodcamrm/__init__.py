@@ -128,6 +128,9 @@ def save_video_file(filepath, rtsp_url, station_id):
     if not os.path.isdir(filepath):
         os.mkdir(filepath)
         
+    if not os.path.isdir(os.path.join(filepath, "videos")):
+        os.mkdir(os.path.join(filepath, "videos"))
+        
     if not os.path.isdir(os.path.join(filepath, "archives")):
         os.mkdir(os.path.join(filepath, "archives"))
         
@@ -159,9 +162,9 @@ def save_video_file(filepath, rtsp_url, station_id):
         logger.warning(f"starting {archive_file} recording")
         logger.debug(f"archive file timeout: {datetime.fromtimestamp(archive_timeout).strftime('%Y-%m-%d %H:%M:%S')}")
         while time.time() < archive_timeout:
-            videos_number+=1
+            videos_number += 1
             
-            live_file = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
+            live_file = os.path.join(filepath, "videos", f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
             live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))
             
             live_timeout = time.time() + 60
@@ -201,7 +204,7 @@ def save_video_file(filepath, rtsp_url, station_id):
         r.set(f"station_{station_id}:record_task:status", "recording")
         
         # Define output
-        live_file = os.path.join(filepath, f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
+        live_file = os.path.join(filepath, "videos", f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
         archive_file = os.path.join(filepath, "archives", f"archive_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
         live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))
         
