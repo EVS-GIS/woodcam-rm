@@ -5,7 +5,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='woodcamrm',
-    version='1.0.1',
+    version='1.0.2',
     packages=find_packages(),
     include_package_data=True,
     zip_safe=False,
@@ -16,6 +16,7 @@ setup(
         'flask_httpauth==4.7.0',
         'flask-restx==0.5.1',
         'flask-sqlalchemy==2.5.1',
+        'sqlalchemy==1.4.46',
         'flask-apscheduler==1.12.4',
         'flask-mail==0.9.1',
         'flask-wtf==1.0.1',
