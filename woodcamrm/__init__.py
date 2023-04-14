@@ -4,6 +4,8 @@ import time
 import redis
 import shutil
 
+from urllib.parse import urlparse, parse_qs
+
 from datetime import datetime
 from dotenv import dotenv_values
 
@@ -142,6 +144,10 @@ def save_video_file(filepath, rtsp_url, station_id):
     # Get current height of frame
     height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 
+    # Get fps from rtsp url
+    parsed_url = urlparse(rtsp_url)
+    fps = int(parse_qs(parsed_url.query)['fps'][0])
+
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     
@@ -156,7 +162,7 @@ def save_video_file(filepath, rtsp_url, station_id):
         
         # Define output
         archive_file = os.path.join(filepath, "archives", f"archive_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
-        archive_output = cv2.VideoWriter(archive_file, fourcc, 3, (int(width),int(height)))
+        archive_output = cv2.VideoWriter(archive_file, fourcc, fps, (int(width),int(height)))
         
         archive_timeout = time.time() + 600
         logger.warning(f"starting {archive_file} recording")
@@ -165,7 +171,7 @@ def save_video_file(filepath, rtsp_url, station_id):
             videos_number += 1
             
             live_file = os.path.join(filepath, "videos", f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
-            live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))
+            live_output = cv2.VideoWriter(live_file, fourcc, fps, (int(width),int(height)))
             
             live_timeout = time.time() + 60
             logger.debug(f"starting {live_file} recording")
@@ -206,7 +212,7 @@ def save_video_file(filepath, rtsp_url, station_id):
         # Define output
         live_file = os.path.join(filepath, "videos", f"video_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
         archive_file = os.path.join(filepath, "archives", f"archive_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.avi")
-        live_output = cv2.VideoWriter(live_file, fourcc, 3, (int(width),int(height)))
+        live_output = cv2.VideoWriter(live_file, fourcc, fps, (int(width),int(height)))
         
         live_timeout = time.time() + 30
         logger.debug(f"starting {live_file} recording")

@@ -29,6 +29,7 @@ setup(
         'opencv-python-headless==4.6.0.66',
         'requests==2.28.1',
         'simplejson==3.17.6',
+        'sqlalchemy==1.4.46',
         'suntime==1.2.5',
         'werkzeug==2.1.2'
     ],
