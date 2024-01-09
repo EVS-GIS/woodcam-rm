@@ -298,11 +298,11 @@ def records_check():
             for clip in old_clips:
                 os.remove(clip)
             
-            # Remove archive clips older than 1hour
+            # Remove archive clips older than 30min
             archives_dir = os.path.join(st.storage_path, 'archives')
             if os.path.isdir(archives_dir):
                 old_clips = [os.path.join(archives_dir, f) for f in os.listdir(archives_dir) 
-                            if time.time() - os.stat(os.path.join(archives_dir, f)).st_mtime >= (60*60)
+                            if time.time() - os.stat(os.path.join(archives_dir, f)).st_mtime >= (60*30)
                             and not os.path.isdir(os.path.join(archives_dir, f))]
                 
                 for clip in old_clips:
