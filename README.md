@@ -23,7 +23,6 @@ The .env file contains all settings to initialize and run WoodCam RM.
 - Set ```SECRET_KEY```: a secret key that will be used for securely signing the session cookie and can be used for any other security related needs by extensions or your application. It should be a long random bytes or str.
 - Set all the database configuration with your own values (WoodCam RM works with a PostgreSQL database).
 - Set the ```API_URL``` with the API from which you retrieve water heights. Warning: using other API that French Hub'Eau will require some modifications in the woodcamrm/jobs.py file.
-- Set all the MQTT broker configuration with your own values.
 - Set the OIDs to retrieve the received and transmitted data volumes on the router.
 - Set a default user and password for the app (will be created at ```flask init-db``` run). 
 - Set ```SCHEDULER_TIMEZONE``` with your one.
